@@ -1,79 +1,85 @@
-import { sql } from '@vercel/postgres';
+// Supabase-backed entries API with CORS
+// Methods:
+// - GET /api/entries?userId=USER&from=YYYY-MM-DD&to=YYYY-MM-DD
+// - PUT /api/entries  body: { userId, date_key, mood, title, note, weather }
+// - DELETE /api/entries?userId=USER&date=YYYY-MM-DD
 
-// Simple CORS for GitHub Pages frontend
-const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || '*'; // set to your Pages URL in prod
+import { createClient } from '@supabase/supabase-js';
 
-async function ensureSchema() {
-  await sql`CREATE TABLE IF NOT EXISTS entries (
-    id SERIAL PRIMARY KEY,
-    date_key DATE NOT NULL UNIQUE,
-    mood TEXT NOT NULL,
-    title TEXT,
-    note TEXT,
-    weather JSONB,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  );`;
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || '*';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+
+const supabase = SUPABASE_URL && SUPABASE_SERVICE_ROLE
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, { auth: { persistSession: false } })
+  : null;
+
+function pickAllowedOrigin(req) {
+  const cfg = (ALLOW_ORIGIN || '*').split(',').map(s => s.trim()).filter(Boolean);
+  if (cfg.includes('*')) return '*';
+  const origin = req.headers.origin || '';
+  const match = cfg.find(o => o === origin);
+  return match || cfg[0] || '*';
 }
 
-function send(res, status, data) {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Access-Control-Allow-Origin', ALLOW_ORIGIN);
+function cors(req, res) {
+  const origin = pickAllowedOrigin(req);
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  if (origin !== '*') res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.end(JSON.stringify(data));
 }
 
 export default async function handler(req, res) {
+  cors(req, res);
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', ALLOW_ORIGIN);
-    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    res.statusCode = 204; res.end(); return;
+    return res.status(204).end();
   }
 
-  try {
-    await ensureSchema();
-  } catch (e) {
-    return send(res, 500, { error: 'schema_init_failed', detail: String(e) });
+  if (!supabase) {
+    return res.status(500).json({ error: 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE.' });
   }
 
   try {
     if (req.method === 'GET') {
-      const { from, to } = req.query;
-      if (from && to) {
-        const { rows } = await sql`SELECT * FROM entries WHERE date_key BETWEEN ${from} AND ${to} ORDER BY date_key`;
-        return send(res, 200, { entries: rows });
-      } else {
-        const { rows } = await sql`SELECT * FROM entries ORDER BY date_key`;
-        return send(res, 200, { entries: rows });
-      }
+      const { userId, from, to } = req.query || {};
+      if (!userId) return res.status(400).json({ error: 'userId is required' });
+      let q = supabase.from('entries').select('*').eq('user_id', userId).order('date_key');
+      if (from) q = q.gte('date_key', from);
+      if (to) q = q.lte('date_key', to);
+      const { data, error } = await q;
+      if (error) throw error;
+      return res.status(200).json({ entries: data });
     }
 
     if (req.method === 'PUT') {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      const { date, mood, title = '', note = '', weather = null } = body || {};
-      if (!date || !mood) return send(res, 400, { error: 'missing_fields', need: ['date','mood'] });
-
-      const { rows } = await sql`
-        INSERT INTO entries (date_key, mood, title, note, weather, updated_at)
-        VALUES (${date}, ${mood}, ${title}, ${note}, ${weather}, NOW())
-        ON CONFLICT (date_key)
-        DO UPDATE SET mood = EXCLUDED.mood, title = EXCLUDED.title, note = EXCLUDED.note, weather = EXCLUDED.weather, updated_at = NOW()
-        RETURNING *;
-      `;
-      return send(res, 200, { entry: rows[0] });
+      const { userId, date_key, mood, title, note, weather } = req.body || {};
+      if (!userId || !date_key) return res.status(400).json({ error: 'userId and date_key are required' });
+      const payload = { user_id: userId, date_key, mood: mood || null, title: title || null, note: note || null, weather: weather || null };
+      const { data, error } = await supabase
+        .from('entries')
+        .upsert(payload, { onConflict: 'user_id,date_key' })
+        .select()
+        .single();
+      if (error) throw error;
+      return res.status(200).json({ entry: data });
     }
 
     if (req.method === 'DELETE') {
-      const { date } = req.query;
-      if (!date) return send(res, 400, { error: 'missing_date' });
-      await sql`DELETE FROM entries WHERE date_key = ${date}`;
-      return send(res, 200, { ok: true });
+      const { userId, date } = req.query || {};
+      if (!userId || !date) return res.status(400).json({ error: 'userId and date are required' });
+      const { error } = await supabase
+        .from('entries')
+        .delete()
+        .eq('user_id', userId)
+        .eq('date_key', date);
+      if (error) throw error;
+      return res.status(200).json({ ok: true });
     }
 
-    return send(res, 405, { error: 'method_not_allowed' });
-  } catch (e) {
-    return send(res, 500, { error: 'server_error', detail: String(e) });
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: String(err?.message || err) });
   }
 }
