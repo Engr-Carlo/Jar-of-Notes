@@ -65,6 +65,12 @@
     </style>
   </head>
   <body>
+    <script>
+      try{
+        const a = localStorage.getItem('jarOfMoods.auth.v1');
+        if(!a){ window.location.href = 'login.html'; }
+      }catch{}
+    </script>
     <div class="container">
       <header>
         <div class="brand">
@@ -96,6 +102,7 @@
           <a class="ghost" href="notes.html" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">⟵ Back to Notes</a>
           <button class="ghost" id="todayBtn">Today</button>
           <button class="btn" id="addMoodBtn">Add Mood</button>
+          <button class="ghost" id="signOutBtn">Sign out</button>
         </div>
       </header>
 
@@ -227,6 +234,7 @@
       document.getElementById('prevMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()-1); renderCalendar(active.getFullYear(), active.getMonth()); });
       document.getElementById('nextMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()+1); renderCalendar(active.getFullYear(), active.getMonth()); });
       document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeModal(); });
+  document.getElementById('signOutBtn').addEventListener('click', ()=>{ try{ localStorage.removeItem('jarOfMoods.auth.v1'); }catch{} window.location.href = 'index.html'; });
     function saveEntry(date, payloadOrMood, noteMaybe, titleMaybe){
         const key=formatKey(date);
         if(typeof payloadOrMood === 'string'){

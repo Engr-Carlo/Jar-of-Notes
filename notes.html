@@ -54,22 +54,23 @@
     .toolbar select { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(2,6,23,0.12); background: #fff; color: var(--ink); font-size: 12px; }
     .toolbar button { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(2,6,23,0.12); background:#fff; color: var(--ink); font-size:12px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); }
 
+
       /* Carousel container */
   .viewport { position: relative; overflow: hidden; display: flex; align-items: center; height: 100%; }
   .track { display: flex; align-items: center; height: 100%; touch-action: pan-y; }
 
       /* Cards: sticky-note style; center prominent, sides peek */
       .card {
-        flex: 0 0 54%;
-        max-width: 360px;
-        margin: 8px 0; /* margins managed by JS for precise peeks */
-        height: min(380px, calc(100dvh - 300px));
+        flex: 0 0 25%;
+        max-width: 300px;
+        margin: 6px 0; /* margins managed by JS for precise peeks */
+        height: min(320px, calc(100dvh - 360px));
         background: var(--note-bg, #fff);
         border: 1px solid rgba(2,6,23,0.08);
         border-radius: var(--radius);
-        box-shadow: 0 18px 48px rgba(2,6,23,0.12), 0 6px 18px rgba(2,6,23,0.06);
+        box-shadow: 0 16px 40px rgba(2,6,23,0.12), 0 6px 16px rgba(2,6,23,0.06);
         position: relative;
-        padding: 16px;
+        padding: 14px;
         /* smoother sticky-note paper texture (no lines) */
         background-image:
           linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.85)),
@@ -95,8 +96,8 @@
     .date { display: none; }
       .weekday { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; text-align: center; }
   .date-lg { display: grid; place-items: center; gap: 2px; margin-top: 8px; text-align: center; }
-  .day-num { font-size: 44px; font-weight: 800; line-height: 1; }
-  .month-year { font-size: 12px; font-weight: 700; opacity: 0.9; }
+  .day-num { font-size: 38px; font-weight: 800; line-height: 1; }
+  .month-year { font-size: 11px; font-weight: 700; opacity: 0.9; }
   .label { display: none; }
   .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 11px; color: var(--muted); }
 
@@ -104,13 +105,13 @@
   .content { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 10px; }
 
   /* Weather preview line */
-  .weather-line { margin-top: 8px; font-size: 11px; color: var(--ink); opacity: 0.9; display: flex; align-items: center; gap: 6px; }
+  .weather-line { margin-top: 6px; font-size: 10px; color: var(--ink); opacity: 0.9; display: flex; align-items: center; gap: 6px; }
   .weather-line .w-emoji { font-size: 14px; }
-  .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 13px; color: var(--muted); }
+  .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 12px; color: var(--muted); }
 
   /* Card preview content */
-  .preview { margin-top: 10px; }
-  .title-line { font-weight: 700; font-size: 13px; text-align: center; margin: 4px 8px 2px; }
+  .preview { margin-top: 8px; }
+  .title-line { font-weight: 700; font-size: 12px; text-align: center; margin: 4px 8px 2px; }
   
 
       .nav-btns { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
@@ -188,7 +189,7 @@
   .detail-note { white-space: pre-wrap; line-height: 1.7; font-size: 14px; margin-top: 12px; }
 
       @media (min-width: 480px) {
-        .card { height: 400px; }
+        .card { height: 340px; }
       }
 
   /* Keep track transform smooth; no tilt */
@@ -202,6 +203,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <script>
+      try{
+        const a = localStorage.getItem('jarOfMoods.auth.v1');
+        if(!a){ window.location.href = 'login.html'; }
+      }catch{}
+    </script>
     <div class="app">
       <header>
         <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -222,6 +229,9 @@
           <div class="pill">
             <select id="monthSelect" aria-label="Month"></select>
             <select id="yearSelect" aria-label="Year"></select>
+          </div>
+          <div class="pill">
+            <button id="signOutBtn" aria-label="Sign out">Sign out</button>
           </div>
         </div>
       </header>
@@ -256,6 +266,8 @@
       </div>
     </div>
 
+
+
     <script>
       // Data
       const STORAGE_KEY = 'jarOfMoods.data.v1';
@@ -287,11 +299,12 @@
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const todayBtn = document.getElementById('todayBtn');
+  const signOutBtn = document.getElementById('signOutBtn');
       let centerDate = new Date(); centerDate.setHours(0,0,0,0);
       let datesList = [];
       let centerIndex = 0;
 
-      const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
       function getYearRangeFromEntries(){
         try{
@@ -544,7 +557,7 @@
       function positionCards(gap){
         // Space cards so middle card has consistent side peeks
         const cards = Array.from(track.children);
-        const pct = gap ? `${gap}px` : '8px';
+        const pct = gap ? `${gap}px` : '6px';
         cards.forEach((c, i)=>{ c.style.marginRight = (i < cards.length-1) ? pct : '0'; });
       }
 
@@ -586,6 +599,11 @@
       if(todayBtn) todayBtn.addEventListener('click', ()=>{
         const t = new Date(); t.setHours(0,0,0,0); centerDate = t; initTrack();
       });
+      if(signOutBtn) signOutBtn.addEventListener('click', ()=>{
+        try{ localStorage.removeItem('jarOfMoods.auth.v1'); }catch{}
+        window.location.href = 'index.html';
+      });
+      
 
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'ArrowLeft') go(-1);
@@ -609,6 +627,7 @@
   // Initial render
   populateYearMonthControls();
   initTrack();
+
     </script>
   </body>
 </html>

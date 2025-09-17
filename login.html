@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Jar of Notes — Login</title>
+    <meta name="description" content="Sign in to Jar of Notes." />
+    <style>
+      :root{
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --brandA: #0ea5e9;
+        --brandB: #7c3aed;
+        --error: #ef4444;
+        --radius: 16px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+      *{ box-sizing: border-box; }
+      html,body{ height:100%; margin:0; color:var(--ink); background: var(--bg); }
+      body::before{ content:""; position:fixed; inset:0; pointer-events:none; background-image: radial-gradient(rgba(2,6,23,0.06) 1px, transparent 1px); background-size: 18px 18px; opacity: .35; }
+
+      .shell{ min-height:100dvh; display:grid; place-items:center; padding:24px; }
+      .card{ width:min(760px, 92vw); display:grid; grid-template-columns: 1.1fr 1fr; gap: 12px; background:linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.92)); border:1px solid rgba(2,6,23,0.08); border-radius: var(--radius); box-shadow: 0 20px 60px rgba(2,6,23,0.10), 0 6px 20px rgba(2,6,23,0.06); overflow:hidden; }
+      .left{ padding:22px 22px 18px; display:flex; flex-direction:column; justify-content:center; gap: 12px; }
+      .brand{ display:flex; align-items:center; gap:10px; }
+      .brand svg{ width:32px; height:32px; }
+      h1{ font-size: 24px; margin:0; letter-spacing:-0.02em; }
+      p.sub{ margin:6px 0 0; color:var(--muted); font-size: 14px; line-height:1.6; }
+
+      .right{ background: radial-gradient(120% 100% at 100% 0%, rgba(14,165,233,0.10), transparent 60%), radial-gradient(120% 100% at 0% 100%, rgba(124,58,237,0.10), transparent 60%), var(--panel); display:flex; align-items:center; justify-content:center; padding:18px; }
+      form{ width:min(420px, 90%); display:flex; flex-direction:column; gap:10px; }
+      label{ font-size:12px; color:var(--muted); margin-bottom:4px; display:block; }
+      .row{ display:flex; gap:10px; }
+      input{ width:100%; padding:10px 12px; border-radius: 10px; border:1px solid rgba(2,6,23,0.12); background: #ffffff; color:var(--ink); outline:none; }
+      input::placeholder{ color:#94a3b8; }
+      .actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+      button{ padding:9px 14px; border-radius:12px; border:1px solid rgba(2,6,23,0.12); background: linear-gradient(90deg, var(--brandA), var(--brandB)); color:white; font-weight:700; cursor:pointer; box-shadow: 0 10px 24px rgba(14,165,233,0.18); }
+      button.ghost{ background: #ffffff; color: var(--ink); border-color: rgba(2,6,23,0.12); box-shadow:none; }
+      .error{ color: var(--error); font-size: 12px; min-height: 16px; }
+      .fineprint{ color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+      @media (max-width: 740px){
+        .card{ grid-template-columns: 1fr; }
+        .right{ padding-top:0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="card">
+        <div class="left">
+          <div class="brand">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9" /><stop offset="100%" stop-color="#7c3aed" /></linearGradient></defs>
+              <rect x="18" y="10" width="28" height="8" rx="3" fill="url(#g)" opacity="0.9" />
+              <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="#ffffff" opacity="0.08" />
+              <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="none" stroke="url(#g)" stroke-width="2" opacity="0.7" />
+            </svg>
+            <h1>Jar of Notes</h1>
+          </div>
+          <p class="sub">Sign in to continue to your notes.</p>
+          <p class="fineprint">Use your provided credentials.</p>
+        </div>
+        <div class="right">
+          <form id="loginForm" novalidate>
+            <div>
+              <label for="username">Username</label>
+              <input id="username" name="username" autocomplete="username" />
+            </div>
+            <div>
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" autocomplete="current-password"  />
+            </div>
+            <div class="error" id="error"></div>
+            <div class="actions">
+              <a href="index.html" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:12px;border:1px solid rgba(2,6,23,0.12)">Back</a>
+              <button type="submit">Sign in</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const AUTH_KEY = 'jarOfMoods.auth.v1';
+      const USERS = {
+        'engrcarlo': { password: 'king', name: 'Engr Carlo' },
+        'nursearmie': { password: 'queen', name: 'Nurse Armie' }
+      };
+
+      // Already signed in? Go to notes
+      try{ if(localStorage.getItem(AUTH_KEY)) window.location.href = 'notes.html'; }catch{}
+
+      const form = document.getElementById('loginForm');
+      const errorEl = document.getElementById('error');
+
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const username = form.username.value.trim();
+        const password = form.password.value;
+        const u = USERS[username];
+        if(!u || u.password !== password){
+          errorEl.textContent = 'Invalid username or password.';
+          return;
+        }
+        const payload = { username, name: u.name, loginAt: new Date().toISOString() };
+        try{ localStorage.setItem(AUTH_KEY, JSON.stringify(payload)); }catch{}
+        window.location.href = 'notes.html';
+      });
+    </script>
+  </body>
+</html>
