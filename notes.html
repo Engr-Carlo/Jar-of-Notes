@@ -31,11 +31,28 @@
 
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); }
+      /* Subtle gradient + dotted background */
+      body {
+        background:
+          radial-gradient(120% 100% at 100% 0%, rgba(14,165,233,0.08), transparent 60%),
+          radial-gradient(120% 100% at 0% 100%, rgba(124,58,237,0.08), transparent 60%),
+          var(--bg);
+      }
+      body::before{
+        content:""; position: fixed; inset:0; pointer-events:none; z-index:0;
+        background-image: radial-gradient(rgba(2,6,23,0.06) 1px, transparent 1px);
+        background-size: 18px 18px; opacity: 0.35;
+      }
 
-  .app { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
-      header { padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .app { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; position: relative; z-index: 1; }
+    header { padding: 10px 12px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
       header .logo { width: 28px; height: 28px; }
       header h1 { font-size: 16px; margin: 0; }
+    /* Navigation toolbar */
+    .toolbar { width: 100%; max-width: 980px; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:4px; flex-wrap: wrap; }
+    .toolbar .pill { display:flex; align-items:center; gap:8px; padding:6px; border-radius: 999px; background: #fff; border: 1px solid rgba(2,6,23,0.08); box-shadow: 0 6px 16px rgba(2,6,23,0.06); }
+    .toolbar select { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(2,6,23,0.12); background: #fff; color: var(--ink); font-size: 12px; }
+    .toolbar button { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(2,6,23,0.12); background:#fff; color: var(--ink); font-size:12px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); }
 
       /* Carousel container */
   .viewport { position: relative; overflow: hidden; display: flex; align-items: center; height: 100%; }
@@ -43,10 +60,10 @@
 
       /* Cards: sticky-note style; center prominent, sides peek */
       .card {
-        flex: 0 0 64%;
-        max-width: 420px;
-        margin: 10px 0; /* margins managed by JS for precise peeks */
-        height: min(440px, calc(100dvh - 260px));
+        flex: 0 0 54%;
+        max-width: 360px;
+        margin: 8px 0; /* margins managed by JS for precise peeks */
+        height: min(380px, calc(100dvh - 300px));
         background: var(--note-bg, #fff);
         border: 1px solid rgba(2,6,23,0.08);
         border-radius: var(--radius);
@@ -78,16 +95,16 @@
     .date { display: none; }
       .weekday { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; text-align: center; }
   .date-lg { display: grid; place-items: center; gap: 2px; margin-top: 8px; text-align: center; }
-  .day-num { font-size: 56px; font-weight: 800; line-height: 1; }
-  .month-year { font-size: 14px; font-weight: 700; opacity: 0.9; }
+  .day-num { font-size: 44px; font-weight: 800; line-height: 1; }
+  .month-year { font-size: 12px; font-weight: 700; opacity: 0.9; }
   .label { display: none; }
-  .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 12px; color: var(--muted); }
+  .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 11px; color: var(--muted); }
 
   /* Vertically center all card content */
   .content { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 10px; }
 
   /* Weather preview line */
-  .weather-line { margin-top: 8px; font-size: 12px; color: var(--ink); opacity: 0.9; display: flex; align-items: center; gap: 6px; }
+  .weather-line { margin-top: 8px; font-size: 11px; color: var(--ink); opacity: 0.9; display: flex; align-items: center; gap: 6px; }
   .weather-line .w-emoji { font-size: 14px; }
   .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 13px; color: var(--muted); }
 
@@ -132,9 +149,9 @@
         overflow: auto;
         background: var(--note-bg, #fff);
         border: 1px solid rgba(2,6,23,0.10);
-        border-radius: 18px;
+        border-radius: 20px;
         box-shadow: 0 28px 80px rgba(2,6,23,0.28), 0 10px 28px rgba(2,6,23,0.12);
-        padding: 18px 18px 20px;
+        padding: 24px 24px 26px;
         transform: scale(.98);
         animation: popIn 180ms ease-out forwards;
         position: relative;
@@ -163,15 +180,15 @@
       @keyframes popIn { to { transform: scale(1) } }
   .detail-head { display:flex; align-items:center; justify-content:center; gap:12px; position:relative; }
   .detail-title { margin: 4px 0; font-size: 22px; font-weight: 800; text-align:center; }
-  .close-x { position:absolute; right:0; top:0; border: 1px solid rgba(2,6,23,0.12); background: #fff; border-radius: 10px; padding: 6px 10px; cursor: pointer; box-shadow: 0 6px 16px rgba(2,6,23,0.08); }
-  .detail-meta { display:flex; align-items:center; justify-content:center; gap:10px; color: var(--muted); font-size: 12px; margin: 6px 0 10px; }
+  .close-x { position:absolute; right:6px; top:6px; border: 1px solid rgba(2,6,23,0.12); background: #fff; border-radius: 10px; padding: 6px 10px; cursor: pointer; box-shadow: 0 6px 16px rgba(2,6,23,0.08); }
+  .detail-meta { display:flex; align-items:center; justify-content:flex-start; flex-wrap: wrap; gap:12px; color: var(--muted); font-size: 12px; margin: 8px 0 12px; padding-bottom: 8px; border-bottom: 1px dashed rgba(2,6,23,0.10); }
   .mood-badge { font-size: 11px; font-weight: 700; color: var(--ink); background: rgba(2,6,23,0.08); border: 1px solid rgba(2,6,23,0.08); border-radius: 999px; padding: 4px 8px; }
   .chip { font-size: 11px; background: rgba(2,6,23,0.06); border: 1px solid rgba(2,6,23,0.08); border-radius: 999px; padding: 3px 8px; }
       
-      .detail-note { white-space: pre-wrap; line-height: 1.6; font-size: 14px; margin-top: 6px; }
+  .detail-note { white-space: pre-wrap; line-height: 1.7; font-size: 14px; margin-top: 12px; }
 
       @media (min-width: 480px) {
-        .card { height: 460px; }
+        .card { height: 400px; }
       }
 
   /* Keep track transform smooth; no tilt */
@@ -196,6 +213,17 @@
           <rect x="24" y="24" width="16" height="18" rx="2.5" fill="none" stroke="url(#g)" stroke-width="1.6" />
         </svg>
         <h1>Jar of Notes</h1>
+        <div class="toolbar" role="group" aria-label="Navigation toolbar">
+          <div class="pill">
+            <button id="prevBtn" aria-label="Previous day">◀</button>
+            <button id="todayBtn" aria-label="Go to today">Today</button>
+            <button id="nextBtn" aria-label="Next day">▶</button>
+          </div>
+          <div class="pill">
+            <select id="monthSelect" aria-label="Month"></select>
+            <select id="yearSelect" aria-label="Year"></select>
+          </div>
+        </div>
       </header>
 
       <div class="viewport" id="viewport">
@@ -254,9 +282,76 @@
       // Build a seamless long list of dates centered on today
       const track = document.getElementById('track');
       const dots = document.getElementById('dots');
+  const yearSelect = document.getElementById('yearSelect');
+  const monthSelect = document.getElementById('monthSelect');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const todayBtn = document.getElementById('todayBtn');
       let centerDate = new Date(); centerDate.setHours(0,0,0,0);
       let datesList = [];
       let centerIndex = 0;
+
+      const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      function getYearRangeFromEntries(){
+        try{
+          const data = load().entries || {};
+          const keys = Object.keys(data);
+          if(keys.length){
+            let minY = 9999, maxY = 0;
+            keys.forEach(k=>{ const y = parseInt(k.slice(0,4),10); if(!isNaN(y)){ if(y<minY) minY=y; if(y>maxY) maxY=y; } });
+            // pad a bit
+            return [minY-1, maxY+1];
+          }
+        }catch{}
+        const y = new Date().getFullYear();
+        return [y-2, y+2];
+      }
+
+      function populateYearMonthControls(){
+        // Year options
+        const [minY, maxY] = getYearRangeFromEntries();
+        yearSelect.innerHTML = '';
+        for(let y=minY; y<=maxY; y++){
+          const opt = document.createElement('option');
+          opt.value = String(y);
+          opt.textContent = String(y);
+          if(y === centerDate.getFullYear()) opt.selected = true;
+          yearSelect.appendChild(opt);
+        }
+        // Month options
+        monthSelect.innerHTML = '';
+        MONTHS.forEach((m, i)=>{
+          const opt = document.createElement('option');
+          opt.value = String(i);
+          opt.textContent = m.slice(0,3);
+          if(i === centerDate.getMonth()) opt.selected = true;
+          monthSelect.appendChild(opt);
+        });
+
+        const onChange = ()=>{
+          const y = parseInt(yearSelect.value,10);
+          const m = parseInt(monthSelect.value,10);
+          if(isNaN(y) || isNaN(m)) return;
+          centerDate = new Date(y, m, 15);
+          centerDate.setHours(0,0,0,0);
+          initTrack();
+        };
+        yearSelect.onchange = onChange;
+        monthSelect.onchange = onChange;
+      }
+
+      function syncSelects(date){
+        // If year outside current range, repopulate
+        const y = date.getFullYear();
+        const years = Array.from(yearSelect.options).map(o=>parseInt(o.value,10));
+        if(!years.length || y < Math.min(...years) || y > Math.max(...years)){
+          populateYearMonthControls();
+        }
+        if(String(yearSelect.value) !== String(y)) yearSelect.value = String(y);
+        const m = date.getMonth();
+        if(String(monthSelect.value) !== String(m)) monthSelect.value = String(m);
+      }
 
   function buildDatesList(spanDays=730){
         const daysEachSide = Math.floor(spanDays/2);
@@ -442,12 +537,14 @@
         track.style.transition = 'transform 320ms cubic-bezier(.22,.61,.36,1)';
         track.style.transform = `translateX(${baseCenterForIndex(index)}px)`;
         applyEmphasis();
+  // keep YM controls in sync with the centered card
+  if(datesList[index]) syncSelects(datesList[index]);
       }
 
       function positionCards(gap){
         // Space cards so middle card has consistent side peeks
         const cards = Array.from(track.children);
-        const pct = gap ? `${gap}px` : '12px';
+        const pct = gap ? `${gap}px` : '8px';
         cards.forEach((c, i)=>{ c.style.marginRight = (i < cards.length-1) ? pct : '0'; });
       }
 
@@ -483,6 +580,13 @@
         if(btn){ go(parseInt(btn.dataset.dir,10)); }
       });
 
+      // Toolbar buttons
+      if(prevBtn) prevBtn.addEventListener('click', ()=> go(-1));
+      if(nextBtn) nextBtn.addEventListener('click', ()=> go(1));
+      if(todayBtn) todayBtn.addEventListener('click', ()=>{
+        const t = new Date(); t.setHours(0,0,0,0); centerDate = t; initTrack();
+      });
+
       window.addEventListener('keydown', (e)=>{
         if(e.key === 'ArrowLeft') go(-1);
         if(e.key === 'ArrowRight') go(1);
@@ -502,8 +606,9 @@
         return best;
       }
 
-      // Initial render
-      initTrack();
+  // Initial render
+  populateYearMonthControls();
+  initTrack();
     </script>
   </body>
 </html>
