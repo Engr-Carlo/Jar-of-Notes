@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node (if added later)
+node_modules/
+
+# Python (if added later)
+__pycache__/
+*.pyc
+
+# Build artifacts
+/dist/
+/build/

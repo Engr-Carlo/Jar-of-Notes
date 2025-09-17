@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Jar of Notes — Today</title>
+    <meta name="description" content="Mobile viewer — swipe through your days and moods." />
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --accentA: #0ea5e9;
+        --accentB: #7c3aed;
+        --happy: #f59e0b;
+        --sad: #3b82f6;
+        --angry: #ef4444;
+        --calm: #10b981;
+        --tired: #8b5cf6;
+        --neutral: #94a3b8;
+  /* Pastel sticky-note colors */
+  --happy-note: #ffe8b6;
+  --sad-note: #dcebff;
+  --angry-note: #ffdada;
+  --calm-note: #ddf6ee;
+  --tired-note: #e8deff;
+  --neutral-note: #eef2f6;
+        --radius: 18px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); }
+
+      .app { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+      header { padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+      header .logo { width: 28px; height: 28px; }
+      header h1 { font-size: 16px; margin: 0; }
+
+      /* Carousel container */
+      .viewport { position: relative; overflow: hidden; }
+      .track { display: flex; align-items: stretch; height: 100%; touch-action: pan-y; }
+
+      /* Cards: sticky-note style; center prominent, sides peek */
+      .card {
+        flex: 0 0 86%;
+        max-width: 420px;
+        margin: 24px auto;
+        height: calc(100dvh - 160px);
+        background: var(--note-bg, #fff);
+        border: 1px solid rgba(2,6,23,0.08);
+        border-radius: var(--radius);
+        box-shadow: 0 18px 48px rgba(2,6,23,0.12), 0 6px 18px rgba(2,6,23,0.06);
+        position: relative;
+        padding: 16px;
+        /* subtle paper texture */
+        background-image: radial-gradient(rgba(2,6,23,0.05) 1px, transparent 1px);
+        background-size: 14px 14px;
+        background-blend-mode: multiply;
+      }
+
+      .peek-left, .peek-right {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 10%;
+        pointer-events: none;
+      }
+      .peek-left { left: 0; background: linear-gradient(90deg, rgba(248,250,252,0.9), rgba(248,250,252,0)); }
+      .peek-right { right: 0; background: linear-gradient(270deg, rgba(248,250,252,0.9), rgba(248,250,252,0)); }
+
+  .date { display: none; }
+      .weekday { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; text-align: center; }
+  .date-lg { display: grid; place-items: center; gap: 2px; margin-top: 12px; text-align: center; }
+  .day-num { font-size: 64px; font-weight: 800; line-height: 1; }
+  .month-year { font-size: 16px; font-weight: 700; opacity: 0.9; }
+  .label { display: none; }
+
+      .nav-btns { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
+      .nav-btns button { width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(2,6,23,0.08); background: #fff; box-shadow: 0 6px 20px rgba(2,6,23,0.08); display: grid; place-items: center; font-size: 18px; color: var(--ink); }
+
+  footer { padding: 8px 12px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+  footer a { color: var(--ink); text-decoration: none; font-weight: 600; border: 1px solid rgba(2,6,23,0.08); border-radius: 999px; padding: 6px 10px; background: #fff; box-shadow: 0 6px 20px rgba(2,6,23,0.06); }
+  footer a:hover { box-shadow: 0 8px 24px rgba(2,6,23,0.1); }
+      .dots { display: flex; gap: 6px; justify-content: center; }
+      .dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(2,6,23,0.15); }
+      .dot.active { background: linear-gradient(90deg, var(--accentA), var(--accentB)); width: 16px; border-radius: 6px; }
+
+      @media (min-width: 480px) {
+        .card { height: 520px; }
+      }
+
+      /* Side cards tilt slightly for a casual sticky-note  feel */
+      .track > .card:nth-child(1) { transform: rotate(-2.2deg); }
+      .track > .card:nth-child(2) { transform: rotate(0deg); }
+      .track > .card:nth-child(3) { transform: rotate(2.2deg); }
+      .track { transition: transform 240ms ease; }
+
+      /* Small "tape" at top of note */
+      .card::before {
+        content: "";
+        position: absolute;
+        top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg);
+        width: 86px; height: 24px;
+        background: rgba(255,255,255,0.7);
+        border: 1px solid rgba(2,6,23,0.06);
+        border-radius: 4px;
+        box-shadow: 0 4px 10px rgba(2,6,23,0.08);
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9" /><stop offset="100%" stop-color="#7c3aed" /></linearGradient></defs>
+          <rect x="18" y="10" width="28" height="8" rx="3" fill="url(#g)" opacity="0.9" />
+          <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="#ffffff" />
+          <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="none" stroke="url(#g)" stroke-width="2" />
+          <rect x="24" y="24" width="16" height="18" rx="2.5" fill="url(#g)" opacity="0.12" />
+          <rect x="24" y="24" width="16" height="18" rx="2.5" fill="none" stroke="url(#g)" stroke-width="1.6" />
+        </svg>
+        <h1>Jar of Notes</h1>
+      </header>
+
+      <div class="viewport" id="viewport">
+        <div class="track" id="track" aria-live="polite"></div>
+        <div class="peek-left"></div>
+        <div class="peek-right"></div>
+      </div>
+
+      <footer>
+        <div class="dots" id="dots" style="margin-bottom:8px"></div>
+        <a href="setup.html" aria-label="Open setup to edit entries">Open setup</a>
+      </footer>
+    </div>
+
+    <script>
+      // Data
+      const STORAGE_KEY = 'jarOfMoods.data.v1';
+      const MOOD_META = {
+        happy:   { name:'Happy',   bgVar:'--happy-note' },
+        sad:     { name:'Sad',     bgVar:'--sad-note' },
+        angry:   { name:'Angry',   bgVar:'--angry-note' },
+        calm:    { name:'Calm',    bgVar:'--calm-note' },
+        tired:   { name:'Tired',   bgVar:'--tired-note' },
+        neutral: { name:'Neutral', bgVar:'--neutral-note' },
+      };
+
+      function getCSS(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+      function fmtKey(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+      function parseKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y, m-1, d); }
+      function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):{entries:{}} }catch{ return {entries:{}} } }
+
+      // Build a 3-card window centered on today
+      const track = document.getElementById('track');
+      const dots = document.getElementById('dots');
+      let centerDate = new Date(); centerDate.setHours(0,0,0,0);
+
+      function renderWindow(){
+        track.innerHTML = '';
+        const dates = [ -1, 0, 1 ].map(off => { const d=new Date(centerDate); d.setDate(centerDate.getDate()+off); return d; });
+        const data = load().entries;
+        dates.forEach((d, idx) => track.appendChild(makeCard(d, data[fmtKey(d)], idx===1)));
+        updateDots();
+        // Center the middle card in view by translating the track
+        requestAnimationFrame(() => snapToCenter());
+      }
+
+  function makeCard(date, entry, isCenter){
+        const card = document.createElement('section');
+        card.className = 'card';
+        if(isCenter) card.setAttribute('aria-current','date');
+
+        const weekday = date.toLocaleDateString(undefined, { weekday:'long' });
+        const monthStr = date.toLocaleDateString(undefined, { month:'short' });
+        const yearStr = date.getFullYear();
+        const dayNum = String(date.getDate());
+        const mood = MOOD_META[entry?.mood || 'neutral'];
+        // set pastel note background based on mood
+        card.style.setProperty('--note-bg', `var(${mood.bgVar})`);
+
+        card.innerHTML = `
+          <div class="weekday">${weekday}</div>
+          <div class="date-lg">
+            <div class="day-num">${dayNum}</div>
+            <div class="month-year">${monthStr} ${yearStr}</div>
+          </div>
+          <div class="nav-btns" aria-hidden="true">
+            <button type="button" data-dir="-1" aria-label="Previous day">◀</button>
+            <button type="button" data-dir="1" aria-label="Next day">▶</button>
+          </div>
+        `;
+        return card;
+      }
+
+      function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+  function updateDots(){
+        dots.innerHTML = '';
+        [0,1,2].forEach(i=>{
+          const el = document.createElement('div');
+          el.className = 'dot' + (i===1?' active':'');
+          dots.appendChild(el);
+        });
+      }
+
+      // Interaction: swipe/drag and buttons/keys
+      let startX = 0, currentX = 0, dragging = false, baseX = 0;
+      function baseCenter(){
+        // Compute translateX to center the middle card
+        const cards = track.children;
+        if(cards.length < 3) return 0;
+        const vp = document.getElementById('viewport');
+        const vpW = vp.clientWidth;
+        const mid = cards[1];
+        const cardW = mid.getBoundingClientRect().width;
+        const gap = parseFloat(getComputedStyle(mid).marginRight) || vpW * 0.1; // fallback 10%
+        // position track so the start of mid card is centered minus half card width
+        const leftOffset = (vpW - cardW) / 2 - (cardW + gap) * 0.5; // slight peek
+        return leftOffset;
+      }
+      track.addEventListener('pointerdown', (e)=>{ dragging=true; startX=e.clientX; baseX = getCurrentTranslateX(); track.setPointerCapture(e.pointerId); });
+      track.addEventListener('pointermove', (e)=>{
+  if(!dragging) return; currentX = e.clientX; const dx = currentX - startX; track.style.transform = `translateX(${baseX + dx}px)`; track.style.transition = 'none';
+      });
+      track.addEventListener('pointerup', (e)=>{ if(!dragging) return; dragging=false; track.releasePointerCapture(e.pointerId); settleSwipe(); });
+      track.addEventListener('pointercancel', ()=>{ dragging=false; settleSwipe(); });
+
+      function settleSwipe(){
+        const computed = getComputedStyle(track).transform;
+        let dx = 0; // fallback if matrix none
+        if(computed && computed !== 'none'){
+          const m = new DOMMatrixReadOnly(computed);
+          dx = m.m41; // translateX
+        }
+        const threshold = window.innerWidth * 0.16; // ~16% swipe
+        if(dx > threshold){ go(-1); } else if(dx < -threshold){ go(1); } else { snapToCenter(); }
+      }
+
+      function getCurrentTranslateX(){
+        const t = getComputedStyle(track).transform;
+        if(!t || t === 'none') return 0;
+        try { return new DOMMatrixReadOnly(t).m41; } catch { return 0; }
+      }
+      function snapToCenter(){
+        positionCards();
+        track.style.transition = 'transform 240ms ease';
+        track.style.transform = `translateX(${baseCenter()}px)`;
+      }
+
+      function positionCards(){
+        // Space cards so center is centered; we use gap via margins
+        const cards = Array.from(track.children);
+        cards.forEach((c, i)=>{ c.style.marginRight = i<2 ? '10%' : '0'; });
+      }
+
+      function go(dir){ // dir: -1 prev, 1 next
+        centerDate.setDate(centerDate.getDate() + dir);
+        renderWindow();
+      }
+
+      track.addEventListener('click', (e)=>{
+        const btn = e.target.closest('button[data-dir]');
+        if(btn){ go(parseInt(btn.dataset.dir,10)); }
+      });
+
+      window.addEventListener('keydown', (e)=>{
+        if(e.key === 'ArrowLeft') go(-1);
+        if(e.key === 'ArrowRight') go(1);
+      });
+
+      // Initial render
+      renderWindow();
+    </script>
+  </body>
+</html>

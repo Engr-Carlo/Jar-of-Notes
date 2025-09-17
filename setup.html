@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Jar of Notes — Setup</title>
+    <meta name="description" content="Jar of Notes — manage your entries (add, edit, export)." />
+    <!-- Copied from original notes.html (full app) -->
+    <style>
+      :root {
+        --bg: #ffffff;
+        --card: #ffffff;
+        --muted: #64748b;
+        --accent: #0ea5e9;
+        --glass: rgba(0, 0, 0, 0.03);
+        --happy: #f59e0b;
+        --sad: #3b82f6;
+        --angry: #ef4444;
+        --calm: #10b981;
+        --tired: #8b5cf6;
+        --neutral: #94a3b8;
+        --radius: 14px;
+        --glass-border: rgba(2, 6, 23, 0.06);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; background: #f8fafc; color: #0f172a; }
+      .container { max-width: 1100px; margin: 28px auto; padding: 24px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .logo { width: 48px; height: 48px; }
+      h1 { margin: 0; font-size: 20px; }
+      p.lead { margin: 0; color: var(--muted); font-size: 13px; }
+      .top-actions { display: flex; gap: 8px; align-items: center; }
+      button.btn { background: linear-gradient(90deg, #2563eb, #7c3aed); border: none; padding: 10px 14px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(2, 6, 23, 0.25); }
+      button.ghost { background: transparent; border: 1px solid var(--glass-border); padding: 8px 12px; border-radius: 10px; color: #0f172a; }
+      .layout { display: grid; grid-template-columns: 1fr 340px; gap: 18px; margin-top: 20px; }
+      .card { background: #fff; padding: 18px; border-radius: var(--radius); box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08); border: 1px solid rgba(2, 6, 23, 0.06); }
+      .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+      .month-title { font-size: 18px; font-weight: 700; }
+      .nav { display: flex; gap: 8px; }
+      .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; color: var(--muted); font-size: 13px; padding: 6px 2px; }
+      .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+      .day { min-height: 88px; border-radius: 10px; padding: 8px; background: linear-gradient(180deg, rgba(2, 6, 23, 0.03), transparent); position: relative; border: 1px solid rgba(2, 6, 23, 0.06); cursor: pointer; transition: transform .15s; }
+      .day:hover { transform: translateY(-4px); }
+      .day.disabled { opacity: .35; cursor: default; }
+      .date-num { font-size: 13px; font-weight: 700; }
+      .mood-dot { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 8px; box-shadow: inset 0 -6px 20px rgba(2, 6, 23, 0.08); }
+      .note-preview { position: absolute; left: 10px; right: 10px; bottom: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sidebar { display: flex; flex-direction: column; gap: 14px; }
+      .mood-palette { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .mood-btn { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 10px; border: 1px solid rgba(2, 6, 23, 0.06); cursor: pointer; background: #ffffff; }
+      .mood-swatch { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; font-size: 16px; }
+      .stats { padding: 12px; border-radius: 10px; background: #fff; border: 1px solid rgba(2, 6, 23, 0.06); }
+      .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+      .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; padding: 16px; }
+      .modal { width: 100%; max-width: 600px; background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid rgba(2,6,23,0.08); }
+      .modal h3 { margin: 0 0 8px; }
+      .form-row { display: flex; gap: 8px; align-items: center; }
+      textarea { width: 100%; min-height: 90px; padding: 10px; border-radius: 10px; border: 1px solid rgba(2,6,23,0.1); background: #ffffff; color: #0f172a; }
+      input[type="text"] { padding: 10px; border-radius: 10px; border: 1px solid rgba(2,6,23,0.1); background: #ffffff; color: #0f172a; }
+      .small { font-size: 12px; color: var(--muted); }
+      footer { margin-top: 18px; color: var(--muted); font-size: 13px; text-align: center; }
+      @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .sidebar { order: 2; } }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#0ea5e9" />
+                  <stop offset="100%" stop-color="#7c3aed" />
+                </linearGradient>
+              </defs>
+              <rect x="18" y="10" width="28" height="8" rx="3" fill="url(#g2)" opacity="0.9" />
+              <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="#ffffff" />
+              <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="none" stroke="url(#g2)" stroke-width="2" />
+              <rect x="24" y="24" width="16" height="18" rx="2.5" fill="url(#g2)" opacity="0.12" />
+              <rect x="24" y="24" width="16" height="18" rx="2.5" fill="none" stroke="url(#g2)" stroke-width="1.6" />
+              <line x1="27" y1="29" x2="37" y2="29" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" />
+              <line x1="27" y1="33" x2="37" y2="33" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" />
+              <line x1="27" y1="37" x2="34" y2="37" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <h1>Jar of Notes — Setup</h1>
+            <p class="lead">Manage entries, stats, and exports.</p>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="ghost" id="todayBtn">Today</button>
+          <button class="btn" id="addMoodBtn">Add Mood</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="card">
+          <div class="calendar-header">
+            <div class="month-title" id="monthTitle">Month — Year</div>
+            <div class="nav">
+              <button class="ghost" id="prevMonth">◀</button>
+              <button class="ghost" id="nextMonth">▶</button>
+            </div>
+          </div>
+
+          <div class="weekdays">
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+            <div>Sun</div>
+          </div>
+
+          <div class="grid" id="calendarGrid" aria-live="polite"></div>
+          <footer class="small">Tip: Click any date to add or edit a mood and note.</footer>
+        </section>
+
+        <aside class="sidebar">
+          <div class="card stats">
+            <h3 style="margin-top: 0">Quick Stats</h3>
+            <div id="statsList"></div>
+            <canvas id="statsChart" width="300" height="150" style="width: 100%; height: 110px; margin-top: 6px"></canvas>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top: 0">Quick Add</h3>
+            <div class="mood-palette" id="palette"></div>
+            <div style="margin-top: 10px; display: flex; gap: 8px">
+              <button class="btn" id="exportBtn">Export CSV</button>
+              <button class="ghost" id="clearBtn">Clear All</button>
+            </div>
+          </div>
+
+          <div class="card small">
+            <strong>Legend</strong>
+            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap">
+              <div style="display: flex; gap: 6px; align-items: center"><div style="width:14px;height:14px;background:var(--happy);border-radius:3px"></div> Happy</div>
+              <div style="display: flex; gap: 6px; align-items: center"><div style="width:14px;height:14px;background:var(--sad);border-radius:3px"></div> Sad</div>
+              <div style="display: flex; gap: 6px; align-items: center"><div style="width:14px;height:14px;background:var(--angry);border-radius:3px"></div> Angry</div>
+              <div style="display: flex; gap: 6px; align-items: center"><div style="width:14px;height:14px;background:var(--calm);border-radius:3px"></div> Calm</div>
+              <div style="display: flex; gap: 6px; align-items: center"><div style="width:14px;height:14px;background:var(--tired);border-radius:3px"></div> Tired</div>
+              <div style="display: flex; gap: 6px; align-items: center"><div style="width:14px;height:14px;background:var(--neutral);border-radius:3px"></div> Neutral</div>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-hidden="true">
+      <div class="modal" role="document" aria-modal="true">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 id="modalDate">Date</h3>
+          <div class="small">Select mood and add a note</div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+          <select id="moodSelect" style="flex:0 0 220px;padding:10px;border-radius:8px;background:#ffffff;border:1px solid rgba(2,6,23,0.1);color:#0f172a"></select>
+          <input type="text" id="quickTitle" placeholder="Short title (optional)" />
+        </div>
+
+        <textarea id="noteText" placeholder="Write something about today — optional"></textarea>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+          <button class="ghost" id="deleteBtn">Delete</button>
+          <button class="btn" id="saveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Copied JS from notes.html (full app)
+      const MOODS = [
+        { id: 'happy',  emoji: '😊', label: 'Happy',  color: getComputedStyle(document.documentElement).getPropertyValue('--happy')?.trim()  || '#f59e0b' },
+        { id: 'sad',    emoji: '😢', label: 'Sad',    color: getComputedStyle(document.documentElement).getPropertyValue('--sad')?.trim()    || '#3b82f6' },
+        { id: 'angry',  emoji: '😡', label: 'Angry',  color: getComputedStyle(document.documentElement).getPropertyValue('--angry')?.trim()  || '#ef4444' },
+        { id: 'calm',   emoji: '😌', label: 'Calm',   color: getComputedStyle(document.documentElement).getPropertyValue('--calm')?.trim()   || '#10b981' },
+        { id: 'tired',  emoji: '😴', label: 'Tired',  color: getComputedStyle(document.documentElement).getPropertyValue('--tired')?.trim()  || '#8b5cf6' },
+        { id: 'neutral',emoji: '😐', label: 'Neutral',color: getComputedStyle(document.documentElement).getPropertyValue('--neutral')?.trim() || '#94a3b8' },
+      ];
+      const STORAGE_KEY = 'jarOfMoods.data.v1';
+      let state = loadState();
+      function loadState(){ try{ const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):{entries:{}} }catch(e){ console.error(e); return {entries:{}} } }
+      function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function formatKey(date){ const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
+      const calendarGrid=document.getElementById('calendarGrid'); const monthTitle=document.getElementById('monthTitle'); let active=new Date(); active.setHours(0,0,0,0);
+      function renderCalendar(year,month){ calendarGrid.innerHTML=''; monthTitle.textContent=new Date(year,month).toLocaleString(undefined,{month:'long',year:'numeric'}); const first=new Date(year,month,1); const start=(first.getDay()+6)%7; const startDate=new Date(year,month,1-start); for(let i=0;i<42;i++){ const d=new Date(startDate); d.setDate(startDate.getDate()+i); const key=formatKey(d); const entry=state.entries[key]; const cell=document.createElement('div'); cell.className='day'; if(d.getMonth()!==month) cell.classList.add('disabled'); cell.setAttribute('tabindex', d.getMonth()===month?0:-1); cell.setAttribute('role','button'); cell.setAttribute('aria-label', d.toDateString()); const num=document.createElement('div'); num.className='date-num'; num.textContent=d.getDate(); cell.appendChild(num); if(entry){ const mood=MOODS.find(m=>m.id===entry.mood)||MOODS[5]; const dot=document.createElement('div'); dot.className='mood-dot'; dot.style.background=mood.color; dot.textContent=mood.emoji; cell.appendChild(dot); if(entry.note){ const note=document.createElement('div'); note.className='note-preview'; note.textContent=entry.title?entry.title+' — '+entry.note:entry.note; cell.appendChild(note);} } cell.addEventListener('click', ()=>openModal(d)); calendarGrid.appendChild(cell);} renderStatsForMonth(year,month);}      
+      const modal=document.getElementById('modalBackdrop'); const moodSelect=document.getElementById('moodSelect'); const noteText=document.getElementById('noteText'); const quickTitle=document.getElementById('quickTitle'); const modalDate=document.getElementById('modalDate'); const saveBtn=document.getElementById('saveBtn'); const deleteBtn=document.getElementById('deleteBtn');
+      const palette=document.getElementById('palette'); MOODS.forEach(m=>{ const opt=document.createElement('option'); opt.value=m.id; opt.textContent=`${m.emoji} ${m.label}`; moodSelect.appendChild(opt); const btn=document.createElement('button'); btn.className='mood-btn'; btn.title=m.label; btn.innerHTML=`<div class="mood-swatch" style="background:${m.color}">${m.emoji}</div><div style="flex:1"><strong>${m.label}</strong><div class="small">Tap to add for today</div></div>`; btn.addEventListener('click', ()=>{ const today=new Date(); saveEntry(today,m.id,'',m.label); renderCalendar(active.getFullYear(),active.getMonth()); closeModal(); }); palette.appendChild(btn); });
+      let modalDateObj=null; function openModal(date){ modalDateObj=new Date(date); modalDateObj.setHours(0,0,0,0); modalDate.textContent=modalDateObj.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'}); const key=formatKey(modalDateObj); const entry=state.entries[key]||{mood:'neutral',note:'',title:''}; moodSelect.value=entry.mood||'neutral'; noteText.value=entry.note||''; quickTitle.value=entry.title||''; modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
+      function closeModal(){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
+      saveBtn.addEventListener('click', ()=>{ if(!modalDateObj) return; saveEntry(modalDateObj, moodSelect.value, noteText.value.trim(), quickTitle.value.trim()); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); });
+      deleteBtn.addEventListener('click', ()=>{ if(!modalDateObj) return; const key=formatKey(modalDateObj); delete state.entries[key]; saveState(); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); });
+      document.getElementById('addMoodBtn').addEventListener('click', ()=> openModal(new Date()));
+      document.getElementById('todayBtn').addEventListener('click', ()=>{ active=new Date(); active.setHours(0,0,0,0); renderCalendar(active.getFullYear(), active.getMonth()); });
+      document.getElementById('prevMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()-1); renderCalendar(active.getFullYear(), active.getMonth()); });
+      document.getElementById('nextMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()+1); renderCalendar(active.getFullYear(), active.getMonth()); });
+      document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeModal(); });
+      function saveEntry(date,mood,note,title){ const key=formatKey(date); state.entries[key]={mood,note,title,updatedAt:new Date().toISOString()}; saveState(); }
+      const statsList=document.getElementById('statsList'); const statsCanvas=document.getElementById('statsChart'); const ctx=statsCanvas.getContext('2d');
+      function renderStatsForMonth(year,month){ const counts={}; MOODS.forEach(m=>counts[m.id]=0); const daysInMonth=new Date(year,month+1,0).getDate(); for(let d=1; d<=daysInMonth; d++){ const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(state.entries[key]) counts[state.entries[key].mood]++; } statsList.innerHTML=''; MOODS.forEach(m=>{ const row=document.createElement('div'); row.className='stat-row'; row.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="width:12px;height:12px;border-radius:3px;background:${m.color}"></div><div>${m.label}</div></div><div class="small">${counts[m.id]||0}</div>`; statsList.appendChild(row); }); drawPieChart(Object.values(counts), MOODS.map(m=>m.color)); }
+      function drawPieChart(values,colors){ const total=values.reduce((a,b)=>a+b,0)||1; const w=statsCanvas.width; const h=statsCanvas.height; const cx=w/2; const cy=h/2; const r=Math.min(w,h)/2-8; ctx.clearRect(0,0,w,h); let start=-Math.PI/2; for(let i=0;i<values.length;i++){ const slice=values[i]/total*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+slice); ctx.closePath(); ctx.fillStyle=colors[i]; ctx.fill(); start+=slice; } ctx.beginPath(); ctx.fillStyle='rgba(2,6,23,0.08)'; ctx.arc(cx,cy,r*0.45,0,Math.PI*2); ctx.fill(); }
+      document.getElementById('exportBtn').addEventListener('click', ()=>{ const rows=[[ 'date','mood','title','note','updatedAt' ]]; Object.keys(state.entries).sort().forEach(k=>{ const e=state.entries[k]; rows.push([k,e.mood,e.title?.replace(/\n/g,' '), e.note?.replace(/\n/g,' '), e.updatedAt||'']); }); const csv=rows.map(r=>r.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`jar-of-moods-export-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+      document.getElementById('clearBtn').addEventListener('click', ()=>{ if(!confirm('Clear all saved moods? This cannot be undone.')) return; state={entries:{}}; saveState(); renderCalendar(active.getFullYear(), active.getMonth()); });
+      function fixCanvasRatio(){ const dpr=window.devicePixelRatio||1; statsCanvas.width=statsCanvas.clientWidth*dpr; statsCanvas.height=statsCanvas.clientHeight*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+      window.addEventListener('resize', ()=>{ fixCanvasRatio(); renderCalendar(active.getFullYear(), active.getMonth()); });
+      fixCanvasRatio(); renderCalendar(active.getFullYear(), active.getMonth());
+      const calendarGridEl=calendarGrid; calendarGridEl.addEventListener('keydown',(e)=>{ const focus=document.activeElement; if(!focus||!focus.classList.contains('day')) return; const idx=Array.from(calendarGridEl.children).indexOf(focus); if(idx<0) return; if(e.key==='ArrowRight') calendarGridEl.children[Math.min(calendarGridEl.children.length-1, idx+1)].focus(); if(e.key==='ArrowLeft') calendarGridEl.children[Math.max(0, idx-1)].focus(); if(e.key==='ArrowDown') calendarGridEl.children[Math.min(calendarGridEl.children.length-1, idx+7)].focus(); if(e.key==='ArrowUp') calendarGridEl.children[Math.max(0, idx-7)].focus(); if(e.key==='Enter') focus.click(); });
+      calendarGrid.addEventListener('dblclick', (e)=>{ const cell=e.target.closest('.day'); if(cell) cell.click(); });
+    </script>
+  </body>
+</html>
