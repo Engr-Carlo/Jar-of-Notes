@@ -32,33 +32,33 @@
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); }
 
-      .app { min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+  .app { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
       header { padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
       header .logo { width: 28px; height: 28px; }
       header h1 { font-size: 16px; margin: 0; }
 
       /* Carousel container */
-      .viewport { position: relative; overflow: hidden; }
-      .track { display: flex; align-items: stretch; height: 100%; touch-action: pan-y; }
+  .viewport { position: relative; overflow: hidden; display: flex; align-items: center; height: 100%; }
+  .track { display: flex; align-items: center; height: 100%; touch-action: pan-y; }
 
       /* Cards: sticky-note style; center prominent, sides peek */
       .card {
         flex: 0 0 78%;
         max-width: 460px;
-        margin: 24px 0; /* margins managed by JS for precise peeks */
-        height: calc(100dvh - 160px);
+        margin: 12px 0; /* margins managed by JS for precise peeks */
+        height: min(520px, calc(100dvh - 220px));
         background: var(--note-bg, #fff);
         border: 1px solid rgba(2,6,23,0.08);
         border-radius: var(--radius);
         box-shadow: 0 18px 48px rgba(2,6,23,0.12), 0 6px 18px rgba(2,6,23,0.06);
         position: relative;
         padding: 16px;
-        /* smoother sticky-note paper texture */
+        /* smoother sticky-note paper texture (no lines) */
         background-image:
-          linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.75)),
-          repeating-linear-gradient(0deg, rgba(2,6,23,0.02), rgba(2,6,23,0.02) 1px, rgba(255,255,255,0) 1px, rgba(255,255,255,0) 8px),
-          radial-gradient(60% 40% at 50% 8%, rgba(255,255,255,0.35), transparent 60%);
-        background-blend-mode: multiply, normal, screen;
+          linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.85)),
+          radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.5), transparent 60%),
+          radial-gradient(160% 140% at 50% 120%, rgba(255,255,255,0.25), transparent 60%);
+        background-blend-mode: multiply, screen, screen;
         background-size: auto, auto, auto;
         cursor: pointer;
         transform-origin: center center;
@@ -75,20 +75,26 @@
       .peek-left { left: 0; background: linear-gradient(90deg, rgba(248,250,252,0.9), rgba(248,250,252,0)); }
       .peek-right { right: 0; background: linear-gradient(270deg, rgba(248,250,252,0.9), rgba(248,250,252,0)); }
 
-  .date { display: none; }
+    .date { display: none; }
       .weekday { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; text-align: center; }
   .date-lg { display: grid; place-items: center; gap: 2px; margin-top: 12px; text-align: center; }
   .day-num { font-size: 64px; font-weight: 800; line-height: 1; }
   .month-year { font-size: 16px; font-weight: 700; opacity: 0.9; }
   .label { display: none; }
+  .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 13px; color: var(--muted); }
+
+  /* Vertically center all card content */
+  .content { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 10px; }
+
+  /* Weather preview line */
+  .weather-line { margin-top: 8px; font-size: 12px; color: var(--ink); opacity: 0.9; display: flex; align-items: center; gap: 6px; }
+  .weather-line .w-emoji { font-size: 14px; }
+  .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 13px; color: var(--muted); }
 
   /* Card preview content */
   .preview { margin-top: 10px; }
   .title-line { font-weight: 700; font-size: 14px; text-align: center; margin: 6px 8px 2px; }
-  .bullets { margin: 6px 18px 0; padding-left: 16px; }
-  .bullets li { font-size: 13px; line-height: 1.35; margin: 4px 0; opacity: 0.9; }
-  .tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
-  .tag { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(2,6,23,0.08); color: var(--ink); border: 1px solid rgba(2,6,23,0.06); }
+  
 
       .nav-btns { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
       .nav-btns button { width: 42px; height: 42px; border-radius: 999px; border: 1px solid rgba(2,6,23,0.08); background: #fff; box-shadow: 0 6px 20px rgba(2,6,23,0.08); display: grid; place-items: center; font-size: 18px; color: var(--ink); }
@@ -114,15 +120,55 @@
         box-shadow: 0 24px 64px rgba(2,6,23,0.16), 0 10px 28px rgba(2,6,23,0.08);
       }
 
-  /* Details overlay */
-  .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(2,6,23,0.35); z-index: 50; backdrop-filter: blur(2px); }
-  .overlay.show { display: flex; }
-  .detail-card { width: min(640px, 92vw); max-height: 86vh; overflow: auto; background: var(--note-bg, #fff); border: 1px solid rgba(2,6,23,0.08); border-radius: 18px; box-shadow: 0 24px 64px rgba(2,6,23,0.2); padding: 16px; }
-  .detail-card h2 { margin: 8px 0 6px; font-size: 18px; }
-  .detail-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
-  .detail-tags { display:flex; gap:6px; flex-wrap:wrap; margin: 8px 0 12px; }
-  .detail-note { white-space: pre-wrap; line-height: 1.5; font-size: 14px; }
-  .close-btn { position: sticky; top: 0; float: right; border: 1px solid rgba(2,6,23,0.1); background:#fff; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+      /* Details overlay */
+  .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(2,6,23,0.45); z-index: 50; backdrop-filter: blur(2px); padding: 16px; }
+      .overlay.show { display: flex; animation: fadeIn 180ms ease-out; }
+      @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+      .detail-card {
+        width: min(600px, 92vw);
+        max-height: 86vh;
+        min-height: min(560px, 84vh);
+        overflow: auto;
+        background: var(--note-bg, #fff);
+        border: 1px solid rgba(2,6,23,0.10);
+        border-radius: 18px;
+        box-shadow: 0 28px 80px rgba(2,6,23,0.28), 0 10px 28px rgba(2,6,23,0.12);
+        padding: 18px 18px 20px;
+        transform: scale(.98);
+        animation: popIn 180ms ease-out forwards;
+        position: relative;
+        /* smooth sticky paper texture (no lines) */
+        background-image:
+          linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.88)),
+          radial-gradient(140% 100% at 50% 0%, rgba(255,255,255,0.55), transparent 60%),
+          radial-gradient(180% 160% at 50% 120%, rgba(255,255,255,0.3), transparent 60%);
+        background-blend-mode: multiply, screen, screen;
+      }
+      /* clear tape on top center */
+      .detail-card::before{
+        content:""; position:absolute; top:-14px; left:50%; transform:translateX(-50%) rotate(-2deg);
+        width: 120px; height: 28px; border-radius: 6px;
+        background: rgba(255,255,255,0.7);
+        border: 1px solid rgba(2,6,23,0.10);
+        box-shadow: 0 10px 20px rgba(2,6,23,0.12);
+      }
+      /* subtle folded corner */
+      .detail-card::after{
+        content:""; position:absolute; top:0; right:0; width:0; height:0;
+        border-top: 18px solid rgba(255,255,255,0.65);
+        border-left: 18px solid transparent;
+        filter: drop-shadow(0 1px 0 rgba(2,6,23,0.08));
+      }
+      @keyframes popIn { to { transform: scale(1) } }
+  .detail-head { display:flex; align-items:center; justify-content:center; gap:12px; position:relative; }
+  .detail-title { margin: 4px 0; font-size: 22px; font-weight: 800; text-align:center; }
+  .close-x { position:absolute; right:0; top:0; border: 1px solid rgba(2,6,23,0.12); background: #fff; border-radius: 10px; padding: 6px 10px; cursor: pointer; box-shadow: 0 6px 16px rgba(2,6,23,0.08); }
+  .detail-meta { display:flex; align-items:center; justify-content:center; gap:10px; color: var(--muted); font-size: 12px; margin: 6px 0 10px; }
+  .mood-badge { font-size: 11px; font-weight: 700; color: var(--ink); background: rgba(2,6,23,0.08); border: 1px solid rgba(2,6,23,0.08); border-radius: 999px; padding: 4px 8px; }
+  .chip { font-size: 11px; background: rgba(2,6,23,0.06); border: 1px solid rgba(2,6,23,0.08); border-radius: 999px; padding: 3px 8px; }
+      
+      .detail-note { white-space: pre-wrap; line-height: 1.6; font-size: 14px; margin-top: 6px; }
 
       @media (min-width: 480px) {
         .card { height: 520px; }
@@ -167,10 +213,17 @@
     <!-- Details overlay -->
     <div class="overlay" id="overlay" aria-modal="true" role="dialog">
       <div class="detail-card" id="detailCard">
-        <button class="close-btn" id="closeOverlay" aria-label="Close">Close</button>
-        <h2 id="detailTitle">Title</h2>
-        <div class="detail-meta" id="detailMeta"></div>
-        <div class="detail-tags" id="detailTags"></div>
+        <div class="detail-head">
+          <div class="detail-title" id="detailTitle">Title</div>
+          <button class="close-x" id="closeOverlay" aria-label="Close">Close</button>
+        </div>
+        <div class="detail-meta">
+          <span id="detailDate"></span>
+          <span class="mood-badge" id="detailMood"></span>
+          <span class="chip" id="detailTime" style="display:none"></span>
+          <span class="chip" id="detailWeather" style="display:none"></span>
+        </div>
+        
         <div class="detail-note" id="detailNote"></div>
       </div>
     </div>
@@ -191,6 +244,12 @@
       function fmtKey(d){ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
       function parseKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y, m-1, d); }
       function load(){ try{ const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):{entries:{}} }catch{ return {entries:{}} } }
+
+      function weatherCodeToEmoji(code){
+        const map={
+          0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌧️',55:'🌧️',56:'🌧️',57:'🌧️',61:'🌦️',63:'🌧️',65:'🌧️',66:'🌧️',67:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',77:'❄️',80:'🌧️',81:'🌧️',82:'⛈️',85:'🌨️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️'
+        }; return map[code] || '🌡️';
+      }
 
       // Build a seamless long list of dates centered on today
       const track = document.getElementById('track');
@@ -233,20 +292,24 @@
         // set pastel note background based on mood
         card.style.setProperty('--note-bg', `var(${mood.bgVar})`);
 
-        const titleLine = entry?.title ? escapeHtml(entry.title) : '';
-        const bullets = Array.isArray(entry?.bullets) ? entry.bullets.slice(0,3) : [];
-        const tags = Array.isArray(entry?.tags) ? entry.tags.slice(0,5) : [];
+  const titleLine = entry?.title ? escapeHtml(entry.title) : '';
+  // Weather preview content
+  const w = entry?.weather;
+  const wEmoji = (w && (typeof w.code!== 'undefined')) ? weatherCodeToEmoji(w.code) : '';
+  const wText = (w && w.temp!=null) ? `${Math.round(w.temp)}°C${w.desc ? ' • '+escapeHtml(w.desc) : ''}` : '';
 
         card.innerHTML = `
-          <div class="weekday">${weekday}</div>
-          <div class="date-lg">
-            <div class="day-num">${dayNum}</div>
-            <div class="month-year">${monthStr} ${yearStr}</div>
-          </div>
-          <div class="preview">
-            ${titleLine ? `<div class="title-line">${titleLine}</div>` : ''}
-            ${bullets.length ? `<ul class="bullets">${bullets.map(b=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
-            ${tags.length ? `<div class="tags">${tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+          <div class="content">
+            <div class="weekday">${weekday}</div>
+            <div class="date-lg">
+              <div class="day-num">${dayNum}</div>
+              <div class="month-year">${monthStr} ${yearStr}</div>
+            </div>
+            <div class="mood-name">${mood.name}</div>
+            <div class="preview">
+              ${titleLine ? `<div class="title-line">${titleLine}</div>` : ''}
+              ${wText ? `<div class="weather-line"><span class="w-emoji">${wEmoji}</span><span>${wText}</span></div>` : ''}
+            </div>
           </div>
           <div class="nav-btns" aria-hidden="true">
             <button type="button" data-dir="-1" aria-label="Previous day">◀</button>
@@ -278,12 +341,15 @@
 
       function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
       // Overlay logic
-      const overlay = document.getElementById('overlay');
-      const detailTitle = document.getElementById('detailTitle');
-      const detailMeta = document.getElementById('detailMeta');
-      const detailTags = document.getElementById('detailTags');
-      const detailNote = document.getElementById('detailNote');
-      document.getElementById('closeOverlay').addEventListener('click', ()=> overlay.classList.remove('show'));
+  const overlay = document.getElementById('overlay');
+  const detailTitle = document.getElementById('detailTitle');
+  const detailDate = document.getElementById('detailDate');
+  const detailMood = document.getElementById('detailMood');
+  
+  const detailNote = document.getElementById('detailNote');
+  const detailTime = document.getElementById('detailTime');
+  const detailWeather = document.getElementById('detailWeather');
+  document.getElementById('closeOverlay').addEventListener('click', ()=> overlay.classList.remove('show'));
       overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.classList.remove('show'); });
 
       window.addEventListener('keydown', (e)=>{
@@ -291,24 +357,38 @@
       });
 
       function openOverlay({date, entry, mood}){
+        const dateStrFull = date.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' });
         if(!entry){
           detailTitle.textContent = `${date.toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' })}`;
-          detailMeta.textContent = 'No additional details for this date.';
-          detailTags.innerHTML = '';
-          detailNote.textContent = '';
+          detailDate.textContent = dateStrFull;
+          detailMood.textContent = mood.name;
+          
+          detailNote.textContent = 'No additional details for this date.';
+          detailTime.style.display='none';
+          detailWeather.style.display='none';
         } else {
           detailTitle.textContent = entry.title || `${date.toLocaleDateString(undefined, { month:'long', day:'numeric', year:'numeric' })}`;
-          detailMeta.textContent = `${date.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric', year:'numeric' })} • Mood: ${mood.name}`;
-          detailTags.innerHTML = (entry.tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
-          const lines = [];
-          if(Array.isArray(entry.bullets)){
-            lines.push(entry.bullets.filter(Boolean).join('\n'));
+          detailDate.textContent = dateStrFull;
+          detailMood.textContent = mood.name;
+          
+          detailNote.textContent = entry.note || '';
+          if(entry.updatedAt){
+            const dt = new Date(entry.updatedAt);
+            detailTime.textContent = dt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+            detailTime.style.display='inline-block';
+          } else {
+            detailTime.style.display='none';
           }
-          if(entry.note){ lines.push(String(entry.note)); }
-          detailNote.textContent = lines.filter(Boolean).join('\n\n');
+          if(entry.weather && entry.weather.temp != null){
+            const t = Math.round(entry.weather.temp);
+            const cond = entry.weather.desc ? ` • ${entry.weather.desc}` : '';
+            detailWeather.textContent = `${t}°C${cond}`;
+            detailWeather.style.display='inline-block';
+          } else {
+            detailWeather.style.display='none';
+          }
         }
-        // Use the card's mood background
-        const bg = getCSS(mood.bgVar);
+        // Use the mood background
         document.getElementById('detailCard').style.setProperty('--note-bg', `var(${mood.bgVar})`);
         overlay.classList.add('show');
       }

@@ -93,6 +93,7 @@
         </div>
 
         <div class="top-actions">
+          <a class="ghost" href="notes.html" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">⟵ Back to Notes</a>
           <button class="ghost" id="todayBtn">Today</button>
           <button class="btn" id="addMoodBtn">Add Mood</button>
         </div>
@@ -161,12 +162,14 @@
           <div class="small">Select mood and add a note</div>
         </div>
 
-        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
           <select id="moodSelect" style="flex:0 0 220px;padding:10px;border-radius:8px;background:#ffffff;border:1px solid rgba(2,6,23,0.1);color:#0f172a"></select>
-          <input type="text" id="quickTitle" placeholder="Short title (optional)" />
+          <input type="text" id="quickTitle" placeholder="Short title (optional)" style="flex:1 1 240px" />
         </div>
 
-        <textarea id="noteText" placeholder="Write something about today — optional"></textarea>
+        
+
+        <textarea id="noteText" placeholder="Full message (optional)"></textarea>
 
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
           <button class="ghost" id="deleteBtn">Delete</button>
@@ -191,19 +194,56 @@
       function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
       function formatKey(date){ const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
       const calendarGrid=document.getElementById('calendarGrid'); const monthTitle=document.getElementById('monthTitle'); let active=new Date(); active.setHours(0,0,0,0);
-      function renderCalendar(year,month){ calendarGrid.innerHTML=''; monthTitle.textContent=new Date(year,month).toLocaleString(undefined,{month:'long',year:'numeric'}); const first=new Date(year,month,1); const start=(first.getDay()+6)%7; const startDate=new Date(year,month,1-start); for(let i=0;i<42;i++){ const d=new Date(startDate); d.setDate(startDate.getDate()+i); const key=formatKey(d); const entry=state.entries[key]; const cell=document.createElement('div'); cell.className='day'; if(d.getMonth()!==month) cell.classList.add('disabled'); cell.setAttribute('tabindex', d.getMonth()===month?0:-1); cell.setAttribute('role','button'); cell.setAttribute('aria-label', d.toDateString()); const num=document.createElement('div'); num.className='date-num'; num.textContent=d.getDate(); cell.appendChild(num); if(entry){ const mood=MOODS.find(m=>m.id===entry.mood)||MOODS[5]; const dot=document.createElement('div'); dot.className='mood-dot'; dot.style.background=mood.color; dot.textContent=mood.emoji; cell.appendChild(dot); if(entry.note){ const note=document.createElement('div'); note.className='note-preview'; note.textContent=entry.title?entry.title+' — '+entry.note:entry.note; cell.appendChild(note);} } cell.addEventListener('click', ()=>openModal(d)); calendarGrid.appendChild(cell);} renderStatsForMonth(year,month);}      
+  function renderCalendar(year,month){ calendarGrid.innerHTML=''; monthTitle.textContent=new Date(year,month).toLocaleString(undefined,{month:'long',year:'numeric'}); const first=new Date(year,month,1); const start=(first.getDay()+6)%7; const startDate=new Date(year,month,1-start); for(let i=0;i<42;i++){ const d=new Date(startDate); d.setDate(startDate.getDate()+i); const key=formatKey(d); const entry=state.entries[key]; const cell=document.createElement('div'); cell.className='day'; if(d.getMonth()!==month) cell.classList.add('disabled'); cell.setAttribute('tabindex', d.getMonth()===month?0:-1); cell.setAttribute('role','button'); cell.setAttribute('aria-label', d.toDateString()); const num=document.createElement('div'); num.className='date-num'; num.textContent=d.getDate(); cell.appendChild(num); if(entry){ const mood=MOODS.find(m=>m.id===entry.mood)||MOODS[5]; const dot=document.createElement('div'); dot.className='mood-dot'; dot.style.background=mood.color; dot.textContent=mood.emoji; cell.appendChild(dot); const preview=document.createElement('div'); preview.className='note-preview'; if(entry.title){ preview.textContent = entry.title; } else if(entry.note){ preview.textContent = entry.note; } if(preview.textContent){ cell.appendChild(preview); } } cell.addEventListener('click', ()=>openModal(d)); calendarGrid.appendChild(cell);} renderStatsForMonth(year,month);}      
       const modal=document.getElementById('modalBackdrop'); const moodSelect=document.getElementById('moodSelect'); const noteText=document.getElementById('noteText'); const quickTitle=document.getElementById('quickTitle'); const modalDate=document.getElementById('modalDate'); const saveBtn=document.getElementById('saveBtn'); const deleteBtn=document.getElementById('deleteBtn');
       const palette=document.getElementById('palette'); MOODS.forEach(m=>{ const opt=document.createElement('option'); opt.value=m.id; opt.textContent=`${m.emoji} ${m.label}`; moodSelect.appendChild(opt); const btn=document.createElement('button'); btn.className='mood-btn'; btn.title=m.label; btn.innerHTML=`<div class="mood-swatch" style="background:${m.color}">${m.emoji}</div><div style="flex:1"><strong>${m.label}</strong><div class="small">Tap to add for today</div></div>`; btn.addEventListener('click', ()=>{ const today=new Date(); saveEntry(today,m.id,'',m.label); renderCalendar(active.getFullYear(),active.getMonth()); closeModal(); }); palette.appendChild(btn); });
-      let modalDateObj=null; function openModal(date){ modalDateObj=new Date(date); modalDateObj.setHours(0,0,0,0); modalDate.textContent=modalDateObj.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'}); const key=formatKey(modalDateObj); const entry=state.entries[key]||{mood:'neutral',note:'',title:''}; moodSelect.value=entry.mood||'neutral'; noteText.value=entry.note||''; quickTitle.value=entry.title||''; modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
+  let modalDateObj=null; function openModal(date){ modalDateObj=new Date(date); modalDateObj.setHours(0,0,0,0); modalDate.textContent=modalDateObj.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'}); const key=formatKey(modalDateObj); const entry=state.entries[key]||{mood:'neutral',note:'',title:''}; moodSelect.value=entry.mood||'neutral'; noteText.value=entry.note||''; quickTitle.value=entry.title||''; modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
       function closeModal(){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
-      saveBtn.addEventListener('click', ()=>{ if(!modalDateObj) return; saveEntry(modalDateObj, moodSelect.value, noteText.value.trim(), quickTitle.value.trim()); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); });
+      saveBtn.addEventListener('click', ()=>{ if(!modalDateObj) return; 
+        const basePayload = { mood:moodSelect.value, note:noteText.value.trim(), title:quickTitle.value.trim() };
+        // Try to enrich with weather using geolocation + Open-Meteo
+        try{
+          if(navigator.geolocation){
+            navigator.geolocation.getCurrentPosition(async (pos)=>{
+              try{
+                const { latitude, longitude } = pos.coords;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const current = data.current || {};
+                const temp = current.temperature_2m;
+                const code = current.weather_code;
+                const desc = weatherCodeToDesc(code);
+                saveEntry(modalDateObj, { ...basePayload, weather:{ temp, code, desc } });
+                renderCalendar(active.getFullYear(), active.getMonth()); closeModal();
+              }catch(e){ saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }
+            }, ()=>{ saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }, { timeout: 5000 });
+          } else { saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }
+        }catch(e){ saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }
+      });
       deleteBtn.addEventListener('click', ()=>{ if(!modalDateObj) return; const key=formatKey(modalDateObj); delete state.entries[key]; saveState(); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); });
-      document.getElementById('addMoodBtn').addEventListener('click', ()=> openModal(new Date()));
+  document.getElementById('addMoodBtn').addEventListener('click', ()=> openModal(new Date()));
       document.getElementById('todayBtn').addEventListener('click', ()=>{ active=new Date(); active.setHours(0,0,0,0); renderCalendar(active.getFullYear(), active.getMonth()); });
       document.getElementById('prevMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()-1); renderCalendar(active.getFullYear(), active.getMonth()); });
       document.getElementById('nextMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()+1); renderCalendar(active.getFullYear(), active.getMonth()); });
       document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeModal(); });
-      function saveEntry(date,mood,note,title){ const key=formatKey(date); state.entries[key]={mood,note,title,updatedAt:new Date().toISOString()}; saveState(); }
+    function saveEntry(date, payloadOrMood, noteMaybe, titleMaybe){
+        const key=formatKey(date);
+        if(typeof payloadOrMood === 'string'){
+          // backward-compat quick-add path
+          state.entries[key]={ mood:payloadOrMood, note:noteMaybe, title:titleMaybe, updatedAt:new Date().toISOString() };
+        } else {
+      const { mood, note, title, weather } = payloadOrMood || {};
+      state.entries[key]={ mood, note, title, weather, updatedAt:new Date().toISOString() };
+        }
+        saveState();
+      }
+
+      function weatherCodeToDesc(code){
+        const map={
+          0:'Clear',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Depositing rime fog',51:'Light drizzle',53:'Drizzle',55:'Dense drizzle',56:'Freezing drizzle',57:'Dense freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Heavy freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Rain showers',81:'Rain showers',82:'Violent rain showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm w/ hail',99:'Thunderstorm w/ heavy hail'
+        }; return map[code]||'Weather';
+      }
       const statsList=document.getElementById('statsList'); const statsCanvas=document.getElementById('statsChart'); const ctx=statsCanvas.getContext('2d');
       function renderStatsForMonth(year,month){ const counts={}; MOODS.forEach(m=>counts[m.id]=0); const daysInMonth=new Date(year,month+1,0).getDate(); for(let d=1; d<=daysInMonth; d++){ const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(state.entries[key]) counts[state.entries[key].mood]++; } statsList.innerHTML=''; MOODS.forEach(m=>{ const row=document.createElement('div'); row.className='stat-row'; row.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="width:12px;height:12px;border-radius:3px;background:${m.color}"></div><div>${m.label}</div></div><div class="small">${counts[m.id]||0}</div>`; statsList.appendChild(row); }); drawPieChart(Object.values(counts), MOODS.map(m=>m.color)); }
       function drawPieChart(values,colors){ const total=values.reduce((a,b)=>a+b,0)||1; const w=statsCanvas.width; const h=statsCanvas.height; const cx=w/2; const cy=h/2; const r=Math.min(w,h)/2-8; ctx.clearRect(0,0,w,h); let start=-Math.PI/2; for(let i=0;i<values.length;i++){ const slice=values[i]/total*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+slice); ctx.closePath(); ctx.fillStyle=colors[i]; ctx.fill(); start+=slice; } ctx.beginPath(); ctx.fillStyle='rgba(2,6,23,0.08)'; ctx.arc(cx,cy,r*0.45,0,Math.PI*2); ctx.fill(); }
