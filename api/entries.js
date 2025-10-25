@@ -1,10 +1,4 @@
-// Supabase-backed entries API with CORS
-// Methods:
-// - GET /api/entries?userId=USER&from=YYYY-MM-DD&to=YYYY-MM-DD
-// - PUT /api/entries  body: { userId, date_key, mood, title, note, weather }
-// - DELETE /api/entries?userId=USER&date=YYYY-MM-DD
-
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || '*';
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -30,12 +24,12 @@ function cors(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   cors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   if (!supabase) {
-    return res.status(500).json({ error: 'Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE.' });
+    return res.status(500).json({ error: 'Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE.' });
   }
 
   try {
@@ -52,8 +46,8 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const { userId, date_key, mood, title, note, weather } = req.body || {};
-      if (!userId || !date_key) return res.status(400).json({ error: 'userId and date_key are required' });
-      const payload = { user_id: userId, date_key, mood: mood || null, title: title || null, note: note || null, weather: weather || null };
+      if (!userId || !date_key) return res.status(400).json({ error: 'userId and date_key required' });
+      const payload = { user_id: userId, date_key, mood, title, note, weather };
       const { data, error } = await supabase
         .from('entries')
         .upsert(payload, { onConflict: 'user_id,date_key' })
@@ -65,12 +59,8 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       const { userId, date } = req.query || {};
-      if (!userId || !date) return res.status(400).json({ error: 'userId and date are required' });
-      const { error } = await supabase
-        .from('entries')
-        .delete()
-        .eq('user_id', userId)
-        .eq('date_key', date);
+      if (!userId || !date) return res.status(400).json({ error: 'userId and date required' });
+      const { error } = await supabase.from('entries').delete().eq('user_id', userId).eq('date_key', date);
       if (error) throw error;
       return res.status(200).json({ ok: true });
     }
@@ -80,15 +70,4 @@ export default async function handler(req, res) {
     console.error(err);
     return res.status(500).json({ error: String(err?.message || err) });
   }
-}
-
-// This is the code block that represents the suggested code change:
-// {
-//   "version": 2,
-//   "builds": [
-//     { "src": "api/**/*.js", "use": "@vercel/node" }
-//   ],
-//   "routes": [
-//     { "src": "/api/(.*)", "dest": "/api/$1" }
-//   ]
-// }
+};
