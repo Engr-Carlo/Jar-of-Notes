@@ -52,10 +52,10 @@
     .brand .logo { width: 32px; height: 32px; }
     .brand h1 { font-size: 18px; margin: 0; font-weight: 700; background: linear-gradient(135deg, var(--accentA), var(--accentB)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .nav-links { display: flex; align-items: center; gap: 8px; }
-    .nav-links a, .nav-links button { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: none; background: transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-    .nav-links a { color: var(--ink); border: 1px solid transparent; }
-    .nav-links a:hover { background: rgba(14,165,233,0.08); border-color: rgba(14,165,233,0.2); }
-    .nav-links .btn-signout { color: #ef4444; border: 1px solid transparent; }
+    .nav-links a, .nav-links button { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: 1px solid transparent; background: transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .nav-links a { color: var(--ink); }
+    .nav-links a:hover, .nav-links button:hover { background: rgba(14,165,233,0.08); border-color: rgba(14,165,233,0.2); }
+    .nav-links .btn-signout { color: #ef4444; }
     .nav-links .btn-signout:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
     /* Navigation toolbar */
     .toolbar { width: 100%; max-width: 980px; display:flex; align-items:center; justify-content:center; gap:10px; margin:16px auto 8px; padding: 0 20px; flex-wrap: wrap; }
@@ -284,8 +284,7 @@
       </div>
 
       <footer>
-        <div class="dots" id="dots" style="margin-bottom:8px"></div>
-        <a href="setup.html" aria-label="Open setup to edit entries">Open setup</a>
+        <div class="dots" id="dots"></div>
       </footer>
     </div>
 

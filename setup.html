@@ -32,10 +32,11 @@
       .brand .logo { width: 32px; height: 32px; }
       .brand h1 { font-size: 18px; margin: 0; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--tired)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
       .nav-links { display: flex; align-items: center; gap: 8px; }
-      .nav-links a, .nav-links button { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: none; background: transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; color: #0f172a; }
-      .nav-links a:hover, .nav-links button:hover { background: rgba(14,165,233,0.08); border: 1px solid rgba(14,165,233,0.2); }
-      .nav-links .btn-signout { color: #ef4444; border: 1px solid transparent; }
+      .nav-links a, .nav-links button { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: 1px solid transparent; background: transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; color: #0f172a; }
+      .nav-links a:hover, .nav-links button:hover { background: rgba(14,165,233,0.08); border-color: rgba(14,165,233,0.2); }
+      .nav-links .btn-signout { color: #ef4444; }
       .nav-links .btn-signout:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+      .nav-links #addMoodBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(2, 6, 23, 0.3); }
       @media (max-width: 640px) { .nav-container { padding: 10px 16px; } .brand h1 { font-size: 16px; } .nav-links a, .nav-links button { padding: 6px 10px; font-size: 13px; } }
       .container { max-width: 1100px; margin: 0 auto 28px; padding: 24px; }
       button.btn { background: linear-gradient(90deg, #2563eb, #7c3aed); border: none; padding: 10px 14px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(2, 6, 23, 0.25); }
@@ -109,6 +110,14 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             Connections
           </a>
+          <button id="todayBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Today
+          </button>
+          <button id="addMoodBtn" style="background: linear-gradient(90deg, #2563eb, #7c3aed); color: white; border: none; box-shadow: 0 6px 18px rgba(2, 6, 23, 0.25);">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Mood
+          </button>
           <button id="signOutBtn" class="btn-signout">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             Sign Out
@@ -117,25 +126,6 @@
       </div>
     </header>
     <div class="container">
-    </header>
-    <div class="container">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <div>
-          <h2 style="margin:0;font-size:24px;font-weight:700;">Setup & Calendar</h2>
-          <p style="margin:4px 0 0;color:var(--muted);font-size:14px;">Manage your entries, stats, and exports.</p>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="ghost" id="todayBtn">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            Today
-          </button>
-          <button class="btn" id="addMoodBtn">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add Mood
-          </button>
-        </div>
-      </div>
-
       <main class="layout">
         <section class="card">
           <div class="calendar-header">
