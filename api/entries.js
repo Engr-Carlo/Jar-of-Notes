@@ -24,9 +24,27 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      const { userId, from, to } = req.query;
+      const { userId, from, to, includeMatches } = req.query;
       if (!userId) return res.status(400).json({ error: 'userId required' });
-      let q = supabase.from('entries').select('*').eq('user_id', userId).order('date_key');
+      
+      let userIds = [userId];
+      
+      // If includeMatches=true, fetch matched users and include their entries
+      if (includeMatches === 'true') {
+        const { data: matches, error: matchError } = await supabase
+          .from('matches')
+          .select('*')
+          .or(`user1.eq.${userId},user2.eq.${userId}`);
+        
+        if (!matchError && matches) {
+          matches.forEach(m => {
+            const partner = m.user1 === userId ? m.user2 : m.user1;
+            userIds.push(partner);
+          });
+        }
+      }
+      
+      let q = supabase.from('entries').select('*').in('user_id', userIds).order('date_key');
       if (from) q = q.gte('date_key', from);
       if (to) q = q.lte('date_key', to);
       const { data, error } = await q;

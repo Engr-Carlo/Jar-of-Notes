@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Jar of Notes — Matches</title>
+    <meta name="description" content="Manage your match connections." />
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --brandA: #0ea5e9;
+        --brandB: #7c3aed;
+        --success: #10b981;
+        --error: #ef4444;
+        --radius: 16px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; color: var(--ink); background: var(--bg); }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image: radial-gradient(rgba(2,6,23,0.06) 1px, transparent 1px);
+        background-size: 18px 18px;
+        opacity: 0.35;
+      }
+
+      .app { min-height: 100dvh; padding: 20px; position: relative; z-index: 1; }
+      header { text-align: center; margin-bottom: 24px; }
+      h1 { margin: 0 0 8px; font-size: 28px; }
+      .sub { color: var(--muted); font-size: 14px; }
+
+      .container { max-width: 880px; margin: 0 auto; display: grid; gap: 18px; }
+      .card { background: var(--panel); border: 1px solid rgba(2,6,23,0.08); border-radius: var(--radius); padding: 18px; box-shadow: 0 10px 24px rgba(2,6,23,0.06); }
+      .card h2 { margin: 0 0 12px; font-size: 18px; }
+
+      .user-list, .request-list, .match-list { display: grid; gap: 10px; }
+      .user-item, .request-item, .match-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border: 1px solid rgba(2,6,23,0.08);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .user-name { font-weight: 600; }
+      .user-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+      button { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(2,6,23,0.12); background: linear-gradient(90deg, var(--brandA), var(--brandB)); color: white; font-weight: 600; cursor: pointer; font-size: 12px; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button.secondary { background: #fff; color: var(--ink); box-shadow: none; }
+      button.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
+      button.success { background: linear-gradient(90deg, #10b981, #059669); }
+
+      .actions { display: flex; gap: 8px; }
+      .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 24px; }
+
+      .nav { margin-top: 20px; text-align: center; }
+      .nav a { color: var(--brandA); text-decoration: none; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Matches</h1>
+        <p class="sub">Connect with others to share your journal entries</p>
+      </header>
+
+      <div class="container">
+        <!-- Current Matches -->
+        <div class="card">
+          <h2>Your Matches</h2>
+          <div id="matchList" class="match-list">
+            <div class="empty">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Pending Requests (Received) -->
+        <div class="card">
+          <h2>Match Requests</h2>
+          <div id="requestList" class="request-list">
+            <div class="empty">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Browse Users -->
+        <div class="card">
+          <h2>Find Users</h2>
+          <div id="userList" class="user-list">
+            <div class="empty">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Sent Requests -->
+        <div class="card">
+          <h2>Sent Requests</h2>
+          <div id="sentList" class="request-list">
+            <div class="empty">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <a href="notes.html">← Back to Notes</a>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = window.location.origin;
+      const AUTH_KEY = 'jarOfMoods.auth.v1';
+
+      function getCurrentUser() {
+        const authData = localStorage.getItem(AUTH_KEY);
+        if (authData) {
+          try {
+            const auth = JSON.parse(authData);
+            return auth.username;
+          } catch (e) {
+            console.error('Failed to parse auth:', e);
+          }
+        }
+        window.location.href = 'login.html';
+      }
+
+      const currentUser = getCurrentUser();
+
+      // Load all data
+      async function loadAll() {
+        await Promise.all([
+          loadMatches(),
+          loadRequests(),
+          loadUsers(),
+          loadSentRequests()
+        ]);
+      }
+
+      // Load current matches
+      async function loadMatches() {
+        try {
+          const res = await fetch(`${API_BASE}/api/matches?action=get_matches&username=${currentUser}`);
+          const { matches } = await res.json();
+          
+          const list = document.getElementById('matchList');
+          if (matches.length === 0) {
+            list.innerHTML = '<div class="empty">No matches yet</div>';
+            return;
+          }
+
+          list.innerHTML = matches.map(partner => `
+            <div class="match-item">
+              <div>
+                <div class="user-name">${partner}</div>
+              </div>
+              <button class="danger" onclick="removeMatch('${partner}')">Remove</button>
+            </div>
+          `).join('');
+        } catch (err) {
+          console.error('Load matches failed:', err);
+        }
+      }
+
+      // Load received match requests
+      async function loadRequests() {
+        try {
+          const res = await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);
+          const { received } = await res.json();
+          
+          const pending = received.filter(r => r.status === 'pending');
+          const list = document.getElementById('requestList');
+          
+          if (pending.length === 0) {
+            list.innerHTML = '<div class="empty">No pending requests</div>';
+            return;
+          }
+
+          list.innerHTML = pending.map(r => `
+            <div class="request-item">
+              <div>
+                <div class="user-name">${r.sender_username}</div>
+                <div class="user-date">${new Date(r.created_at).toLocaleDateString()}</div>
+              </div>
+              <div class="actions">
+                <button class="success" onclick="respondRequest('${r.id}', 'accepted')">Accept</button>
+                <button class="danger" onclick="respondRequest('${r.id}', 'rejected')">Reject</button>
+              </div>
+            </div>
+          `).join('');
+        } catch (err) {
+          console.error('Load requests failed:', err);
+        }
+      }
+
+      // Load sent requests
+      async function loadSentRequests() {
+        try {
+          const res = await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);
+          const { sent } = await res.json();
+          
+          const list = document.getElementById('sentList');
+          
+          if (sent.length === 0) {
+            list.innerHTML = '<div class="empty">No sent requests</div>';
+            return;
+          }
+
+          list.innerHTML = sent.map(r => `
+            <div class="request-item">
+              <div>
+                <div class="user-name">${r.receiver_username}</div>
+                <div class="user-date">Status: ${r.status}</div>
+              </div>
+            </div>
+          `).join('');
+        } catch (err) {
+          console.error('Load sent requests failed:', err);
+        }
+      }
+
+      // Load all users
+      async function loadUsers() {
+        try {
+          const res = await fetch(`${API_BASE}/api/matches?action=list_users`);
+          const { users } = await res.json();
+          
+          const list = document.getElementById('userList');
+          const others = users.filter(u => u.username !== currentUser);
+          
+          if (others.length === 0) {
+            list.innerHTML = '<div class="empty">No other users found</div>';
+            return;
+          }
+
+          list.innerHTML = others.map(u => `
+            <div class="user-item">
+              <div>
+                <div class="user-name">${u.username}</div>
+                <div class="user-date">Joined ${new Date(u.created_at).toLocaleDateString()}</div>
+              </div>
+              <button onclick="sendRequest('${u.username}')">Send Request</button>
+            </div>
+          `).join('');
+        } catch (err) {
+          console.error('Load users failed:', err);
+        }
+      }
+
+      // Send match request
+      async function sendRequest(targetUsername) {
+        try {
+          const res = await fetch(`${API_BASE}/api/matches`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'send_request', username: currentUser, targetUsername })
+          });
+
+          const data = await res.json();
+          
+          if (!res.ok) {
+            alert(data.error || 'Failed to send request');
+            return;
+          }
+
+          alert('Request sent!');
+          loadAll();
+        } catch (err) {
+          console.error('Send request failed:', err);
+          alert('Failed to send request');
+        }
+      }
+
+      // Respond to match request
+      async function respondRequest(requestId, status) {
+        try {
+          const res = await fetch(`${API_BASE}/api/matches`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'respond_request', requestId, username: currentUser, status })
+          });
+
+          const data = await res.json();
+          
+          if (!res.ok) {
+            alert(data.error || 'Failed to respond');
+            return;
+          }
+
+          alert(status === 'accepted' ? 'Match accepted!' : 'Request rejected');
+          loadAll();
+        } catch (err) {
+          console.error('Respond failed:', err);
+          alert('Failed to respond');
+        }
+      }
+
+      // Remove match
+      async function removeMatch(targetUsername) {
+        if (!confirm(`Remove match with ${targetUsername}?`)) return;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/matches?action=remove_match&username=${currentUser}&targetUsername=${targetUsername}`, {
+            method: 'DELETE'
+          });
+
+          const data = await res.json();
+          
+          if (!res.ok) {
+            alert(data.error || 'Failed to remove match');
+            return;
+          }
+
+          alert('Match removed');
+          loadAll();
+        } catch (err) {
+          console.error('Remove match failed:', err);
+          alert('Failed to remove match');
+        }
+      }
+
+      // Initialize
+      loadAll();
+    </script>
+  </body>
+</html>

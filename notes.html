@@ -101,6 +101,22 @@
   .label { display: none; }
   .mood-name { text-align:center; margin-top: 4px; font-weight: 700; font-size: 11px; color: var(--muted); }
 
+  /* Owner badge for matched users' entries */
+  .owner-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: linear-gradient(90deg, var(--accentA), var(--accentB));
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 12px rgba(14,165,233,0.3);
+  }
+
   /* Vertically center all card content */
   .content { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 10px; }
 
@@ -231,6 +247,7 @@
             <select id="yearSelect" aria-label="Year"></select>
           </div>
           <div class="pill">
+            <button onclick="window.location.href='matches.html'" aria-label="Manage matches">Matches</button>
             <button id="signOutBtn" aria-label="Sign out">Sign out</button>
           </div>
         </div>
@@ -288,13 +305,13 @@ function getCurrentUser() {
 
 let currentUser = getCurrentUser(); // Use the function
 
-let entries = {}; // date_key → { mood, title, note, weather, ... }
+let entries = {}; // date_key → { mood, title, note, weather, user_id, ... }
 let dates = []; // sorted array of date strings
 
-// Load all entries for the user
+// Load all entries for the user + matched partners
 async function loadEntries() {
   try {
-    const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}`);
+    const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}&includeMatches=true`);
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const { entries: data } = await res.json();
     
@@ -305,7 +322,8 @@ async function loadEntries() {
         title: e.title || '',
         note: e.note || '',
         weather: e.weather || null,
-        updatedAt: e.updated_at
+        updatedAt: e.updated_at,
+        userId: e.user_id // Track who owns this entry
       };
     });
     
@@ -354,7 +372,13 @@ function renderCards() {
     card.dataset.date = dateKey;
     card.style.setProperty('--note-bg', `var(--${entry.mood}-note)`);
     
+    // Show whose entry this is (if not current user)
+    const ownerLabel = entry.userId && entry.userId !== currentUser 
+      ? `<div class="owner-badge">${entry.userId}</div>` 
+      : '';
+    
     card.innerHTML = `
+      ${ownerLabel}
       <div class="weekday">${date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}</div>
       <div class="date-block">
         <div class="day">${date.getDate()}</div>
