@@ -196,10 +196,26 @@
         { id: 'neutral',emoji: '😐', label: 'Neutral',color: getComputedStyle(document.documentElement).getPropertyValue('--neutral')?.trim() || '#94a3b8' },
       ];
       const API_BASE = window.location.origin;
-      const USER_KEY = 'jarOfMoods.currentUser';
-      
-      let state = { entries: {}, currentMonth: new Date() };
-      let currentUser = localStorage.getItem(USER_KEY) || 'engrcarlo';
+      const STORAGE_KEY = 'jarOfMoods.data.v1';
+const USER_KEY = 'jarOfMoods.currentUser';
+
+// Get the actual logged-in user from auth
+function getCurrentUser() {
+  const authData = localStorage.getItem('jarOfMoods.auth.v1');
+  if (authData) {
+    try {
+      const auth = JSON.parse(authData);
+      return auth.username;
+    } catch (e) {
+      console.error('Failed to parse auth:', e);
+    }
+  }
+  // Fallback to legacy key if exists
+  return localStorage.getItem(USER_KEY) || 'engrcarlo';
+}
+
+let state = { entries: {}, currentMonth: new Date() };
+let currentUser = getCurrentUser(); // Use the function instead of direct localStorage
 
       function formatKey(date){ const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
 

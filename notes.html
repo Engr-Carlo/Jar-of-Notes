@@ -272,7 +272,22 @@
       const API_BASE = window.location.origin;
 const USER_KEY = 'jarOfMoods.currentUser';
 
-let currentUser = localStorage.getItem(USER_KEY) || 'engrcarlo';
+// Get the actual logged-in user from auth
+function getCurrentUser() {
+  const authData = localStorage.getItem('jarOfMoods.auth.v1');
+  if (authData) {
+    try {
+      const auth = JSON.parse(authData);
+      return auth.username;
+    } catch (e) {
+      console.error('Failed to parse auth:', e);
+    }
+  }
+  return localStorage.getItem(USER_KEY) || 'engrcarlo';
+}
+
+let currentUser = getCurrentUser(); // Use the function
+
 let entries = {}; // date_key → { mood, title, note, weather, ... }
 let dates = []; // sorted array of date strings
 
