@@ -269,6 +269,113 @@
 
 
     <script>
+      const API_BASE = window.location.origin;
+const USER_KEY = 'jarOfMoods.currentUser';
+
+let currentUser = localStorage.getItem(USER_KEY) || 'engrcarlo';
+let entries = {}; // date_key → { mood, title, note, weather, ... }
+let dates = []; // sorted array of date strings
+
+// Load all entries for the user
+async function loadEntries() {
+  try {
+    const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const { entries: data } = await res.json();
+    
+    entries = {};
+    data.forEach(e => {
+      entries[e.date_key] = {
+        mood: e.mood || 'neutral',
+        title: e.title || '',
+        note: e.note || '',
+        weather: e.weather || null,
+        updatedAt: e.updated_at
+      };
+    });
+    
+    buildDateList();
+    renderCards();
+    centerToday();
+  } catch (err) {
+    console.error('Load failed:', err);
+    alert('Failed to load entries. Check console.');
+  }
+}
+
+// Build date list (existing logic, but now using `entries` object from API)
+function buildDateList() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - 180); // 6 months back
+  const end = new Date(today);
+  end.setDate(today.getDate() + 180); // 6 months forward
+  
+  dates = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().split('T')[0]);
+  }
+}
+
+// Render cards (existing logic, but pull data from `entries` object)
+function renderCards() {
+  const track = document.getElementById('track');
+  track.innerHTML = '';
+  
+  dates.forEach(dateKey => {
+    const entry = entries[dateKey] || { mood: 'neutral' };
+    const date = new Date(dateKey + 'T00:00:00');
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.date = dateKey;
+    card.style.setProperty('--note-bg', `var(--${entry.mood}-note)`);
+    
+    card.innerHTML = `
+      <div class="weekday">${date.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase()}</div>
+      <div class="date-block">
+        <div class="day">${date.getDate()}</div>
+        <div class="month-year">${date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
+      </div>
+      <div class="mood-name">${entry.mood.charAt(0).toUpperCase() + entry.mood.slice(1)}</div>
+      ${entry.title ? `<div class="preview-title">${entry.title}</div>` : ''}
+    `;
+    
+    card.addEventListener('click', () => openDetails(dateKey));
+    track.appendChild(card);
+  });
+}
+
+// Open details modal (existing logic, but pull from `entries`)
+function openDetails(dateKey) {
+  const entry = entries[dateKey] || {};
+  const date = new Date(dateKey + 'T00:00:00');
+  const modal = document.getElementById('detailsModal');
+  
+  document.getElementById('detailTitle').textContent = entry.title || entry.mood || 'No entry';
+  document.getElementById('detailDate').textContent = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  document.getElementById('detailMood').textContent = entry.mood || 'Neutral';
+  document.getElementById('detailNote').textContent = entry.note || 'No notes for this day.';
+  
+  if (entry.weather) {
+    document.getElementById('detailWeather').textContent = `${entry.weather.temp}°C, ${entry.weather.desc}`;
+    document.getElementById('detailWeather').style.display = 'block';
+  } else {
+    document.getElementById('detailWeather').style.display = 'none';
+  }
+  
+  modal.classList.add('show');
+}
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', () => {
+  loadEntries();
+});
+
       // Data
       const STORAGE_KEY = 'jarOfMoods.data.v1';
       const MOOD_META = {

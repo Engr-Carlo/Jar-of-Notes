@@ -195,11 +195,102 @@
         { id: 'tired',  emoji: '😴', label: 'Tired',  color: getComputedStyle(document.documentElement).getPropertyValue('--tired')?.trim()  || '#8b5cf6' },
         { id: 'neutral',emoji: '😐', label: 'Neutral',color: getComputedStyle(document.documentElement).getPropertyValue('--neutral')?.trim() || '#94a3b8' },
       ];
-      const STORAGE_KEY = 'jarOfMoods.data.v1';
-      let state = loadState();
-      function loadState(){ try{ const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):{entries:{}} }catch(e){ console.error(e); return {entries:{}} } }
-      function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      const API_BASE = window.location.origin;
+      const USER_KEY = 'jarOfMoods.currentUser';
+      
+      let state = { entries: {}, currentMonth: new Date() };
+      let currentUser = localStorage.getItem(USER_KEY) || 'engrcarlo';
+
       function formatKey(date){ const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
+
+      // Load entries from API
+      async function loadState() {
+        const year = state.currentMonth.getFullYear();
+        const month = state.currentMonth.getMonth();
+        const from = new Date(year, month, 1).toISOString().split('T')[0];
+        const to = new Date(year, month + 1, 0).toISOString().split('T')[0];
+        
+        try {
+          const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}&from=${from}&to=${to}`);
+          if (!res.ok) throw new Error(`API error: ${res.status}`);
+          const { entries } = await res.json();
+          
+          state.entries = {};
+          entries.forEach(e => {
+            state.entries[e.date_key] = {
+              mood: e.mood,
+              title: e.title || '',
+              note: e.note || '',
+              weather: e.weather || null,
+              updatedAt: e.updated_at
+            };
+          });
+          
+          renderCalendar(year, month);
+          renderStatsForMonth(year, month);
+        } catch (err) {
+          console.error('Load failed:', err);
+          alert('Failed to load entries. Check console.');
+        }
+      }
+
+      // Save entry to API
+      async function saveEntry(date, payloadOrMood, noteMaybe, titleMaybe) {
+        const key = formatKey(date);
+        let payload;
+        
+        if (typeof payloadOrMood === 'string') {
+          // backward-compat quick-add path
+          payload = { userId: currentUser, date_key: key, mood: payloadOrMood, title: titleMaybe || '', note: noteMaybe || '', weather: null };
+        } else {
+          const { mood, note, title, weather } = payloadOrMood || {};
+          payload = { userId: currentUser, date_key: key, mood, title: title || '', note: note || '', weather: weather || null };
+        }
+        
+        try {
+          const res = await fetch(`${API_BASE}/api/entries`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error(`API error: ${res.status}`);
+          const { entry } = await res.json();
+          
+          state.entries[key] = {
+            mood: entry.mood,
+            title: entry.title || '',
+            note: entry.note || '',
+            weather: entry.weather || null,
+            updatedAt: entry.updated_at
+          };
+          
+          renderCalendar(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
+          renderStatsForMonth(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
+        } catch (err) {
+          console.error('Save failed:', err);
+          alert('Failed to save entry. Check console.');
+        }
+      }
+
+      // Delete entry from API
+      async function deleteEntryByKey(dateKey) {
+        if (!confirm('Delete this entry?')) return;
+        
+        try {
+          const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}&date=${dateKey}`, {
+            method: 'DELETE'
+          });
+          if (!res.ok) throw new Error(`API error: ${res.status}`);
+          
+          delete state.entries[dateKey];
+          renderCalendar(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
+          renderStatsForMonth(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
+          closeModal();
+        } catch (err) {
+          console.error('Delete failed:', err);
+          alert('Failed to delete entry. Check console.');
+        }
+      }
       const calendarGrid=document.getElementById('calendarGrid'); const monthTitle=document.getElementById('monthTitle'); let active=new Date(); active.setHours(0,0,0,0);
   function renderCalendar(year,month){ calendarGrid.innerHTML=''; monthTitle.textContent=new Date(year,month).toLocaleString(undefined,{month:'long',year:'numeric'}); const first=new Date(year,month,1); const start=(first.getDay()+6)%7; const startDate=new Date(year,month,1-start); for(let i=0;i<42;i++){ const d=new Date(startDate); d.setDate(startDate.getDate()+i); const key=formatKey(d); const entry=state.entries[key]; const cell=document.createElement('div'); cell.className='day'; if(d.getMonth()!==month) cell.classList.add('disabled'); cell.setAttribute('tabindex', d.getMonth()===month?0:-1); cell.setAttribute('role','button'); cell.setAttribute('aria-label', d.toDateString()); const num=document.createElement('div'); num.className='date-num'; num.textContent=d.getDate(); cell.appendChild(num); if(entry){ const mood=MOODS.find(m=>m.id===entry.mood)||MOODS[5]; const dot=document.createElement('div'); dot.className='mood-dot'; dot.style.background=mood.color; dot.textContent=mood.emoji; cell.appendChild(dot); const preview=document.createElement('div'); preview.className='note-preview'; if(entry.title){ preview.textContent = entry.title; } else if(entry.note){ preview.textContent = entry.note; } if(preview.textContent){ cell.appendChild(preview); } } cell.addEventListener('click', ()=>openModal(d)); calendarGrid.appendChild(cell);} renderStatsForMonth(year,month);}      
       const modal=document.getElementById('modalBackdrop'); const moodSelect=document.getElementById('moodSelect'); const noteText=document.getElementById('noteText'); const quickTitle=document.getElementById('quickTitle'); const modalDate=document.getElementById('modalDate'); const saveBtn=document.getElementById('saveBtn'); const deleteBtn=document.getElementById('deleteBtn');
@@ -226,26 +317,15 @@
               }catch(e){ saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }
             }, ()=>{ saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }, { timeout: 5000 });
           } else { saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }
-        }catch(e){ saveEntry(modalDateObj, basePayload); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); }
+        }catch(e){ saveEntry(modalDateObj, basePayload); closeModal(); }
       });
-      deleteBtn.addEventListener('click', ()=>{ if(!modalDateObj) return; const key=formatKey(modalDateObj); delete state.entries[key]; saveState(); renderCalendar(active.getFullYear(), active.getMonth()); closeModal(); });
+      deleteBtn.addEventListener('click', async ()=>{ if(!modalDateObj) return; const key=formatKey(modalDateObj); await deleteEntryByKey(key); });
   document.getElementById('addMoodBtn').addEventListener('click', ()=> openModal(new Date()));
-      document.getElementById('todayBtn').addEventListener('click', ()=>{ active=new Date(); active.setHours(0,0,0,0); renderCalendar(active.getFullYear(), active.getMonth()); });
-      document.getElementById('prevMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()-1); renderCalendar(active.getFullYear(), active.getMonth()); });
-      document.getElementById('nextMonth').addEventListener('click', ()=>{ active.setMonth(active.getMonth()+1); renderCalendar(active.getFullYear(), active.getMonth()); });
+      document.getElementById('todayBtn').addEventListener('click', ()=>{ state.currentMonth=new Date(); state.currentMonth.setHours(0,0,0,0); loadState(); });
+      document.getElementById('prevMonth').addEventListener('click', ()=>{ state.currentMonth.setMonth(state.currentMonth.getMonth()-1); loadState(); });
+      document.getElementById('nextMonth').addEventListener('click', ()=>{ state.currentMonth.setMonth(state.currentMonth.getMonth()+1); loadState(); });
       document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target===e.currentTarget) closeModal(); });
   document.getElementById('signOutBtn').addEventListener('click', ()=>{ try{ localStorage.removeItem('jarOfMoods.auth.v1'); }catch{} window.location.href = 'index.html'; });
-    function saveEntry(date, payloadOrMood, noteMaybe, titleMaybe){
-        const key=formatKey(date);
-        if(typeof payloadOrMood === 'string'){
-          // backward-compat quick-add path
-          state.entries[key]={ mood:payloadOrMood, note:noteMaybe, title:titleMaybe, updatedAt:new Date().toISOString() };
-        } else {
-      const { mood, note, title, weather } = payloadOrMood || {};
-      state.entries[key]={ mood, note, title, weather, updatedAt:new Date().toISOString() };
-        }
-        saveState();
-      }
 
       function weatherCodeToDesc(code){
         const map={
@@ -256,10 +336,10 @@
       function renderStatsForMonth(year,month){ const counts={}; MOODS.forEach(m=>counts[m.id]=0); const daysInMonth=new Date(year,month+1,0).getDate(); for(let d=1; d<=daysInMonth; d++){ const key=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; if(state.entries[key]) counts[state.entries[key].mood]++; } statsList.innerHTML=''; MOODS.forEach(m=>{ const row=document.createElement('div'); row.className='stat-row'; row.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="width:12px;height:12px;border-radius:3px;background:${m.color}"></div><div>${m.label}</div></div><div class="small">${counts[m.id]||0}</div>`; statsList.appendChild(row); }); drawPieChart(Object.values(counts), MOODS.map(m=>m.color)); }
       function drawPieChart(values,colors){ const total=values.reduce((a,b)=>a+b,0)||1; const w=statsCanvas.width; const h=statsCanvas.height; const cx=w/2; const cy=h/2; const r=Math.min(w,h)/2-8; ctx.clearRect(0,0,w,h); let start=-Math.PI/2; for(let i=0;i<values.length;i++){ const slice=values[i]/total*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+slice); ctx.closePath(); ctx.fillStyle=colors[i]; ctx.fill(); start+=slice; } ctx.beginPath(); ctx.fillStyle='rgba(2,6,23,0.08)'; ctx.arc(cx,cy,r*0.45,0,Math.PI*2); ctx.fill(); }
       document.getElementById('exportBtn').addEventListener('click', ()=>{ const rows=[[ 'date','mood','title','note','updatedAt' ]]; Object.keys(state.entries).sort().forEach(k=>{ const e=state.entries[k]; rows.push([k,e.mood,e.title?.replace(/\n/g,' '), e.note?.replace(/\n/g,' '), e.updatedAt||'']); }); const csv=rows.map(r=>r.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`jar-of-moods-export-${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
-      document.getElementById('clearBtn').addEventListener('click', ()=>{ if(!confirm('Clear all saved moods? This cannot be undone.')) return; state={entries:{}}; saveState(); renderCalendar(active.getFullYear(), active.getMonth()); });
+      document.getElementById('clearBtn').addEventListener('click', async ()=>{ if(!confirm('Clear all saved moods? This cannot be undone.')) return; const toDel=Object.keys(state.entries); for(const key of toDel){ try{ await fetch(`${API_BASE}/api/entries?userId=${currentUser}&date=${key}`, {method:'DELETE'}); }catch(e){ console.error('Failed to delete',key,e); } } state.entries={}; await loadState(); });
       function fixCanvasRatio(){ const dpr=window.devicePixelRatio||1; statsCanvas.width=statsCanvas.clientWidth*dpr; statsCanvas.height=statsCanvas.clientHeight*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
-      window.addEventListener('resize', ()=>{ fixCanvasRatio(); renderCalendar(active.getFullYear(), active.getMonth()); });
-      fixCanvasRatio(); renderCalendar(active.getFullYear(), active.getMonth());
+      window.addEventListener('resize', ()=>{ fixCanvasRatio(); renderCalendar(state.currentMonth.getFullYear(), state.currentMonth.getMonth()); });
+      fixCanvasRatio(); loadState();
       const calendarGridEl=calendarGrid; calendarGridEl.addEventListener('keydown',(e)=>{ const focus=document.activeElement; if(!focus||!focus.classList.contains('day')) return; const idx=Array.from(calendarGridEl.children).indexOf(focus); if(idx<0) return; if(e.key==='ArrowRight') calendarGridEl.children[Math.min(calendarGridEl.children.length-1, idx+1)].focus(); if(e.key==='ArrowLeft') calendarGridEl.children[Math.max(0, idx-1)].focus(); if(e.key==='ArrowDown') calendarGridEl.children[Math.min(calendarGridEl.children.length-1, idx+7)].focus(); if(e.key==='ArrowUp') calendarGridEl.children[Math.max(0, idx-7)].focus(); if(e.key==='Enter') focus.click(); });
       calendarGrid.addEventListener('dblclick', (e)=>{ const cell=e.target.closest('.day'); if(cell) cell.click(); });
     </script>

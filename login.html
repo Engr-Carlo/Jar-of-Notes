@@ -109,6 +109,27 @@
         try{ localStorage.setItem(AUTH_KEY, JSON.stringify(payload)); }catch{}
         window.location.href = 'notes.html';
       });
+
+      // In the login form submit handler, after credentials check:
+      function handleLogin(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        
+        const users = {
+          engrcarlo: 'king',
+          nursearmie: 'queen'
+        };
+        
+        if (users[username] === password) {
+          const auth = { username, loginTime: new Date().toISOString() };
+          localStorage.setItem('jarOfMoods.auth.v1', JSON.stringify(auth));
+          localStorage.setItem('jarOfMoods.currentUser', username); // NEW: store username
+          window.location.href = 'notes.html';
+        } else {
+          document.getElementById('error').textContent = 'Invalid username or password';
+        }
+      }
     </script>
   </body>
 </html>
