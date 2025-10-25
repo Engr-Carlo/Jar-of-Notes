@@ -45,14 +45,24 @@
       }
 
   .app { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; position: relative; z-index: 1; }
-    header { padding: 10px 12px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-      header .logo { width: 28px; height: 28px; }
-      header h1 { font-size: 16px; margin: 0; }
+    /* Professional Header */
+    header { position: sticky; top: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(2,6,23,0.08); box-shadow: 0 4px 20px rgba(2,6,23,0.06); z-index: 100; }
+    .nav-container { max-width: 1200px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+    .brand .logo { width: 32px; height: 32px; }
+    .brand h1 { font-size: 18px; margin: 0; font-weight: 700; background: linear-gradient(135deg, var(--accentA), var(--accentB)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-links a, .nav-links button { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; border: none; background: transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .nav-links a { color: var(--ink); border: 1px solid transparent; }
+    .nav-links a:hover { background: rgba(14,165,233,0.08); border-color: rgba(14,165,233,0.2); }
+    .nav-links .btn-signout { color: #ef4444; border: 1px solid transparent; }
+    .nav-links .btn-signout:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
     /* Navigation toolbar */
-    .toolbar { width: 100%; max-width: 980px; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:4px; flex-wrap: wrap; }
+    .toolbar { width: 100%; max-width: 980px; display:flex; align-items:center; justify-content:center; gap:10px; margin:16px auto 8px; padding: 0 20px; flex-wrap: wrap; }
     .toolbar .pill { display:flex; align-items:center; gap:8px; padding:6px; border-radius: 999px; background: #fff; border: 1px solid rgba(2,6,23,0.08); box-shadow: 0 6px 16px rgba(2,6,23,0.06); }
     .toolbar select { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(2,6,23,0.12); background: #fff; color: var(--ink); font-size: 12px; }
     .toolbar button { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(2,6,23,0.12); background:#fff; color: var(--ink); font-size:12px; box-shadow: 0 4px 12px rgba(2,6,23,0.06); }
+    @media (max-width: 640px) { .nav-container { padding: 10px 16px; } .brand h1 { font-size: 16px; } .nav-links a, .nav-links button { padding: 6px 10px; font-size: 13px; } }
 
 
       /* Carousel container */
@@ -227,31 +237,45 @@
     </script>
     <div class="app">
       <header>
-        <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9" /><stop offset="100%" stop-color="#7c3aed" /></linearGradient></defs>
-          <rect x="18" y="10" width="28" height="8" rx="3" fill="url(#g)" opacity="0.9" />
-          <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="#ffffff" />
-          <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="none" stroke="url(#g)" stroke-width="2" />
-          <rect x="24" y="24" width="16" height="18" rx="2.5" fill="url(#g)" opacity="0.12" />
-          <rect x="24" y="24" width="16" height="18" rx="2.5" fill="none" stroke="url(#g)" stroke-width="1.6" />
-        </svg>
-        <h1>Jar of Notes</h1>
-        <div class="toolbar" role="group" aria-label="Navigation toolbar">
-          <div class="pill">
-            <button id="prevBtn" aria-label="Previous day">◀</button>
-            <button id="todayBtn" aria-label="Go to today">Today</button>
-            <button id="nextBtn" aria-label="Next day">▶</button>
-          </div>
-          <div class="pill">
-            <select id="monthSelect" aria-label="Month"></select>
-            <select id="yearSelect" aria-label="Year"></select>
-          </div>
-          <div class="pill">
-            <button onclick="window.location.href='matches.html'" aria-label="Manage matches">Matches</button>
-            <button id="signOutBtn" aria-label="Sign out">Sign out</button>
+        <div class="nav-container">
+          <a href="index.html" class="brand">
+            <svg class="logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9" /><stop offset="100%" stop-color="#7c3aed" /></linearGradient></defs>
+              <rect x="18" y="10" width="28" height="8" rx="3" fill="url(#g)" opacity="0.9" />
+              <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="#ffffff" />
+              <path d="M20 18 h24 v26 a12 12 0 0 1 -12 12 h0 a12 12 0 0 1 -12 -12 z" fill="none" stroke="url(#g)" stroke-width="2" />
+              <rect x="24" y="24" width="16" height="18" rx="2.5" fill="url(#g)" opacity="0.12" />
+              <rect x="24" y="24" width="16" height="18" rx="2.5" fill="none" stroke="url(#g)" stroke-width="1.6" />
+            </svg>
+            <h1>Jar of Notes</h1>
+          </a>
+          <div class="nav-links">
+            <a href="setup.html">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              Setup
+            </a>
+            <a href="matches.html">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              Connections
+            </a>
+            <button id="signOutBtn" class="btn-signout">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Sign Out
+            </button>
           </div>
         </div>
       </header>
+      <div class="toolbar" role="group" aria-label="Navigation toolbar">
+        <div class="pill">
+          <button id="prevBtn" aria-label="Previous day">◀</button>
+          <button id="todayBtn" aria-label="Go to today">Today</button>
+          <button id="nextBtn" aria-label="Next day">▶</button>
+        </div>
+        <div class="pill">
+          <select id="monthSelect" aria-label="Month"></select>
+          <select id="yearSelect" aria-label="Year"></select>
+        </div>
+      </div>
 
       <div class="viewport" id="viewport">
         <div class="track" id="track" aria-live="polite"></div>
