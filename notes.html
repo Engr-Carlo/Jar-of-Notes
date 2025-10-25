@@ -303,6 +303,15 @@ async function loadEntries() {
   }
 }
 
+// Add this function to center the carousel on today's date
+function centerToday() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayCard = document.querySelector(`[data-date="${today}"]`);
+  if (todayCard) {
+    todayCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  }
+}
+
 // Build date list (existing logic, but now using `entries` object from API)
 function buildDateList() {
   const today = new Date();
