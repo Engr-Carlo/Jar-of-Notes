@@ -1,5 +1,13 @@
 {
-  "version": 2,
+  "name": "jar-of-notes",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "engines": {
+    "node": "20.x"
+  },
   "builds": [
     {
       "src": "api/**/*.js",

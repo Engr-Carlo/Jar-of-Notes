@@ -2,7 +2,6 @@
   "name": "jar-of-notes",
   "private": true,
   "version": "1.0.0",
-  "description": "Static app with Supabase-backed API on Vercel",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0"
   },
