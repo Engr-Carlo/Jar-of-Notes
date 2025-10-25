@@ -162,11 +162,32 @@
         filter: none;
         transform: scale(1);
         box-shadow: 0 24px 64px rgba(2,6,23,0.16), 0 10px 28px rgba(2,6,23,0.08);
+        cursor: pointer;
+        position: relative;
+      }
+      .card.center::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(14,165,233,0.2), rgba(124,58,237,0.2));
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+        z-index: -1;
+      }
+      .card.center:hover::after {
+        opacity: 1;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.02); opacity: 0.6; }
       }
 
       /* Details overlay */
-  .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(2,6,23,0.45); z-index: 50; backdrop-filter: blur(2px); padding: 16px; }
-      .overlay.show { display: grid; animation: fadeIn 180ms ease-out; }
+  .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(2,6,23,0.65); z-index: 50; backdrop-filter: blur(8px); padding: 16px; opacity: 0; transition: opacity 300ms ease-out; }
+      .overlay.show { display: grid; animation: fadeIn 300ms ease-out forwards; opacity: 1; }
       @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 
       .detail-card {
@@ -177,10 +198,10 @@
         background: var(--note-bg, #fff);
         border: 1px solid rgba(2,6,23,0.10);
         border-radius: 20px;
-        box-shadow: 0 28px 80px rgba(2,6,23,0.28), 0 10px 28px rgba(2,6,23,0.12);
+        box-shadow: 0 32px 96px rgba(2,6,23,0.4), 0 16px 48px rgba(2,6,23,0.25);
         padding: 24px 24px 26px;
-        transform: scale(.98);
-        animation: popIn 180ms ease-out forwards;
+        transform: scale(0.92);
+        animation: popIn 320ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         position: relative;
         /* smooth sticky paper texture (no lines) */
         background-image:
@@ -188,6 +209,14 @@
           radial-gradient(140% 100% at 50% 0%, rgba(255,255,255,0.55), transparent 60%),
           radial-gradient(180% 160% at 50% 120%, rgba(255,255,255,0.3), transparent 60%);
         background-blend-mode: multiply, screen, screen;
+      }
+      @keyframes popIn {
+        0% { transform: scale(0.92) translateY(20px); opacity: 0; }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+      }
+      @keyframes popOut {
+        0% { transform: scale(1) translateY(0); opacity: 1; }
+        100% { transform: scale(0.92) translateY(20px); opacity: 0; }
       }
       /* clear tape on top center */
       .detail-card::before{
@@ -204,7 +233,6 @@
         border-left: 18px solid transparent;
         filter: drop-shadow(0 1px 0 rgba(2,6,23,0.08));
       }
-      @keyframes popIn { to { transform: scale(1) } }
   .detail-head { display:flex; align-items:center; justify-content:center; gap:12px; position:relative; }
   .detail-title { margin: 4px 0; font-size: 22px; font-weight: 800; text-align:center; }
   .close-x { position:absolute; right:6px; top:6px; border: 1px solid rgba(2,6,23,0.12); background: #fff; border-radius: 10px; padding: 6px 10px; cursor: pointer; box-shadow: 0 6px 16px rgba(2,6,23,0.08); }
@@ -587,14 +615,16 @@ window.addEventListener('DOMContentLoaded', () => {
   // Weather preview content
   const w = entry?.weather;
   const wEmoji = (w && (typeof w.code!== 'undefined')) ? weatherCodeToEmoji(w.code) : '';
-  const wText = (w && w.temp!=null) ? `${Math.round(w.temp)}°C${w.desc ? ' • '+escapeHtml(w.desc) : ''}` : '';
+  const wText = w?.temp ? `${w.temp}°C` : '';
 
-        card.innerHTML = `
-          <div class="content">
-            <div class="weekday">${weekday}</div>
-            <div class="date-lg">
-              <div class="day-num">${dayNum}</div>
-              <div class="month-year">${monthStr} ${yearStr}</div>
+  card.innerHTML = `
+          <div class="card-inner">
+            <div class="date-header">
+              <div class="weekday">${weekday.toUpperCase()}</div>
+              <div class="date-box">
+                <div class="day-num">${dayNum}</div>
+                <div class="month-year">${monthStr} ${yearStr}</div>
+              </div>
             </div>
             <div class="mood-name">${mood.name}</div>
             <div class="preview">
@@ -607,13 +637,23 @@ window.addEventListener('DOMContentLoaded', () => {
             <button type="button" data-dir="1" aria-label="Next day">▶</button>
           </div>
         `;
+        
         // Click to open details (ignore if dragging/swiping or clicking nav)
         card.addEventListener('click', (ev)=>{
           if(dragging) return;
           // ignore clicks on nav buttons
           if(ev.target.closest('button[data-dir]')) return;
-          openOverlay({ date, entry, mood });
+          
+          // Add a quick scale-down effect before opening overlay
+          card.style.transition = 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)';
+          card.style.transform = 'scale(0.95)';
+          
+          setTimeout(() => {
+            card.style.transform = '';
+            openOverlay({ date, entry, mood });
+          }, 150);
         });
+        
         return card;
       }
 
@@ -640,11 +680,24 @@ window.addEventListener('DOMContentLoaded', () => {
   const detailNote = document.getElementById('detailNote');
   const detailTime = document.getElementById('detailTime');
   const detailWeather = document.getElementById('detailWeather');
-  document.getElementById('closeOverlay').addEventListener('click', ()=> overlay.classList.remove('show'));
-      overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.classList.remove('show'); });
+  
+  function closeOverlay() {
+    const detailCard = document.getElementById('detailCard');
+    detailCard.style.animation = 'popOut 250ms cubic-bezier(0.4, 0, 1, 1) forwards';
+    overlay.style.opacity = '0';
+    
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      detailCard.style.animation = '';
+      overlay.style.opacity = '';
+    }, 250);
+  }
+  
+  document.getElementById('closeOverlay').addEventListener('click', closeOverlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeOverlay(); });
 
       window.addEventListener('keydown', (e)=>{
-        if(e.key === 'Escape') overlay.classList.remove('show');
+        if(e.key === 'Escape') closeOverlay();
       });
 
       function openOverlay({date, entry, mood}){
