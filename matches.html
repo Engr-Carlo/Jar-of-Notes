@@ -1,329 +1,82 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>Jar of Notes — Matches</title>
-    <meta name="description" content="Manage your match connections." />
-    <style>
-      :root {
-        --bg: #f8fafc;
-        --panel: #ffffff;
-        --ink: #0f172a;
-        --muted: #64748b;
-        --brandA: #0ea5e9;
-        --brandB: #7c3aed;
-        --success: #10b981;
-        --error: #ef4444;
-        --radius: 16px;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      }
-      * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; color: var(--ink); background: var(--bg); }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background-image: radial-gradient(rgba(2,6,23,0.06) 1px, transparent 1px);
-        background-size: 18px 18px;
-        opacity: 0.35;
-      }
-
-      .app { min-height: 100dvh; padding: 20px; position: relative; z-index: 1; }
-      header { text-align: center; margin-bottom: 24px; }
-      h1 { margin: 0 0 8px; font-size: 28px; }
-      .sub { color: var(--muted); font-size: 14px; }
-
-      .container { max-width: 880px; margin: 0 auto; display: grid; gap: 18px; }
-      .card { background: var(--panel); border: 1px solid rgba(2,6,23,0.08); border-radius: var(--radius); padding: 18px; box-shadow: 0 10px 24px rgba(2,6,23,0.06); }
-      .card h2 { margin: 0 0 12px; font-size: 18px; }
-
-      .user-list, .request-list, .match-list { display: grid; gap: 10px; }
-      .user-item, .request-item, .match-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 14px;
-        border: 1px solid rgba(2,6,23,0.08);
-        border-radius: 10px;
-        background: #fff;
-      }
-      .user-name { font-weight: 600; }
-      .user-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-      button { padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(2,6,23,0.12); background: linear-gradient(90deg, var(--brandA), var(--brandB)); color: white; font-weight: 600; cursor: pointer; font-size: 12px; }
-      button:disabled { opacity: 0.5; cursor: not-allowed; }
-      button.secondary { background: #fff; color: var(--ink); box-shadow: none; }
-      button.danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
-      button.success { background: linear-gradient(90deg, #10b981, #059669); }
-
-      .actions { display: flex; gap: 8px; }
-      .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 24px; }
-
-      .nav { margin-top: 20px; text-align: center; }
-      .nav a { color: var(--brandA); text-decoration: none; font-weight: 600; }
-    </style>
-  </head>
-  <body>
-    <div class="app">
-      <header>
-        <h1>Matches</h1>
-        <p class="sub">Connect with others to share your journal entries</p>
-      </header>
-
-      <div class="container">
-        <!-- Current Matches -->
-        <div class="card">
-          <h2>Your Matches</h2>
-          <div id="matchList" class="match-list">
-            <div class="empty">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Pending Requests (Received) -->
-        <div class="card">
-          <h2>Match Requests</h2>
-          <div id="requestList" class="request-list">
-            <div class="empty">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Browse Users -->
-        <div class="card">
-          <h2>Find Users</h2>
-          <div id="userList" class="user-list">
-            <div class="empty">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Sent Requests -->
-        <div class="card">
-          <h2>Sent Requests</h2>
-          <div id="sentList" class="request-list">
-            <div class="empty">Loading...</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="nav">
-        <a href="notes.html">← Back to Notes</a>
-      </div>
-    </div>
-
-    <script>
-      const API_BASE = window.location.origin;
-      const AUTH_KEY = 'jarOfMoods.auth.v1';
-
-      function getCurrentUser() {
-        const authData = localStorage.getItem(AUTH_KEY);
-        if (authData) {
-          try {
-            const auth = JSON.parse(authData);
-            return auth.username;
-          } catch (e) {
-            console.error('Failed to parse auth:', e);
-          }
-        }
-        window.location.href = 'login.html';
-      }
-
-      const currentUser = getCurrentUser();
-
-      // Load all data
-      async function loadAll() {
-        await Promise.all([
-          loadMatches(),
-          loadRequests(),
-          loadUsers(),
-          loadSentRequests()
-        ]);
-      }
-
-      // Load current matches
-      async function loadMatches() {
-        try {
-          const res = await fetch(`${API_BASE}/api/matches?action=get_matches&username=${currentUser}`);
-          const { matches } = await res.json();
-          
-          const list = document.getElementById('matchList');
-          if (matches.length === 0) {
-            list.innerHTML = '<div class="empty">No matches yet</div>';
-            return;
-          }
-
-          list.innerHTML = matches.map(partner => `
-            <div class="match-item">
-              <div>
-                <div class="user-name">${partner}</div>
-              </div>
-              <button class="danger" onclick="removeMatch('${partner}')">Remove</button>
-            </div>
-          `).join('');
-        } catch (err) {
-          console.error('Load matches failed:', err);
-        }
-      }
-
-      // Load received match requests
-      async function loadRequests() {
-        try {
-          const res = await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);
-          const { received } = await res.json();
-          
-          const pending = received.filter(r => r.status === 'pending');
-          const list = document.getElementById('requestList');
-          
-          if (pending.length === 0) {
-            list.innerHTML = '<div class="empty">No pending requests</div>';
-            return;
-          }
-
-          list.innerHTML = pending.map(r => `
-            <div class="request-item">
-              <div>
-                <div class="user-name">${r.sender_username}</div>
-                <div class="user-date">${new Date(r.created_at).toLocaleDateString()}</div>
-              </div>
-              <div class="actions">
-                <button class="success" onclick="respondRequest('${r.id}', 'accepted')">Accept</button>
-                <button class="danger" onclick="respondRequest('${r.id}', 'rejected')">Reject</button>
-              </div>
-            </div>
-          `).join('');
-        } catch (err) {
-          console.error('Load requests failed:', err);
-        }
-      }
-
-      // Load sent requests
-      async function loadSentRequests() {
-        try {
-          const res = await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);
-          const { sent } = await res.json();
-          
-          const list = document.getElementById('sentList');
-          
-          if (sent.length === 0) {
-            list.innerHTML = '<div class="empty">No sent requests</div>';
-            return;
-          }
-
-          list.innerHTML = sent.map(r => `
-            <div class="request-item">
-              <div>
-                <div class="user-name">${r.receiver_username}</div>
-                <div class="user-date">Status: ${r.status}</div>
-              </div>
-            </div>
-          `).join('');
-        } catch (err) {
-          console.error('Load sent requests failed:', err);
-        }
-      }
-
-      // Load all users
-      async function loadUsers() {
-        try {
-          const res = await fetch(`${API_BASE}/api/matches?action=list_users`);
-          const { users } = await res.json();
-          
-          const list = document.getElementById('userList');
-          const others = users.filter(u => u.username !== currentUser);
-          
-          if (others.length === 0) {
-            list.innerHTML = '<div class="empty">No other users found</div>';
-            return;
-          }
-
-          list.innerHTML = others.map(u => `
-            <div class="user-item">
-              <div>
-                <div class="user-name">${u.username}</div>
-                <div class="user-date">Joined ${new Date(u.created_at).toLocaleDateString()}</div>
-              </div>
-              <button onclick="sendRequest('${u.username}')">Send Request</button>
-            </div>
-          `).join('');
-        } catch (err) {
-          console.error('Load users failed:', err);
-        }
-      }
-
-      // Send match request
-      async function sendRequest(targetUsername) {
-        try {
-          const res = await fetch(`${API_BASE}/api/matches`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send_request', username: currentUser, targetUsername })
-          });
-
-          const data = await res.json();
-          
-          if (!res.ok) {
-            alert(data.error || 'Failed to send request');
-            return;
-          }
-
-          alert('Request sent!');
-          loadAll();
-        } catch (err) {
-          console.error('Send request failed:', err);
-          alert('Failed to send request');
-        }
-      }
-
-      // Respond to match request
-      async function respondRequest(requestId, status) {
-        try {
-          const res = await fetch(`${API_BASE}/api/matches`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'respond_request', requestId, username: currentUser, status })
-          });
-
-          const data = await res.json();
-          
-          if (!res.ok) {
-            alert(data.error || 'Failed to respond');
-            return;
-          }
-
-          alert(status === 'accepted' ? 'Match accepted!' : 'Request rejected');
-          loadAll();
-        } catch (err) {
-          console.error('Respond failed:', err);
-          alert('Failed to respond');
-        }
-      }
-
-      // Remove match
-      async function removeMatch(targetUsername) {
-        if (!confirm(`Remove match with ${targetUsername}?`)) return;
-
-        try {
-          const res = await fetch(`${API_BASE}/api/matches?action=remove_match&username=${currentUser}&targetUsername=${targetUsername}`, {
-            method: 'DELETE'
-          });
-
-          const data = await res.json();
-          
-          if (!res.ok) {
-            alert(data.error || 'Failed to remove match');
-            return;
-          }
-
-          alert('Match removed');
-          loadAll();
-        } catch (err) {
-          console.error('Remove match failed:', err);
-          alert('Failed to remove match');
-        }
-      }
-
-      // Initialize
-      loadAll();
-    </script>
-  </body>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Connect  Jar of Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#f8fafc;--panel:#fff;--ink:#0f172a;--muted:#64748b;--brandA:#0ea5e9;--brandB:#7c3aed;--success:#10b981;--error:#ef4444;--warning:#f59e0b;--radius:16px;font-family:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;color:var(--ink);background:var(--bg)}
+body{background:radial-gradient(circle at 20% 10%,rgba(14,165,233,.12),transparent 40%),radial-gradient(circle at 80% 90%,rgba(124,58,237,.12),transparent 40%),var(--bg)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(rgba(2,6,23,.04) 1px,transparent 1px);background-size:20px 20px;opacity:.4;z-index:0}
+nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid rgba(2,6,23,.08);box-shadow:0 4px 12px rgba(2,6,23,.04)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;text-decoration:none;color:var(--ink)}
+.nav-brand svg{width:32px;height:32px}
+.nav-links{display:flex;gap:6px;align-items:center}
+.nav-links a,.nav-links button{padding:8px 14px;border-radius:10px;text-decoration:none;color:var(--ink);font-size:14px;font-weight:500;transition:background 150ms;border:none;background:transparent;cursor:pointer;font-family:inherit}
+.nav-links a:hover,.nav-links button:hover{background:rgba(2,6,23,.06)}
+.app{min-height:calc(100dvh - 120px);padding:32px 24px;position:relative;z-index:1}
+.hero{max-width:680px;margin:0 auto 40px;text-align:center}
+.hero h1{font-size:42px;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,var(--brandA),var(--brandB));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:16px;color:var(--muted);line-height:1.6}
+.tabs{max-width:1200px;margin:0 auto 32px;display:flex;gap:8px;background:#fff;padding:6px;border-radius:14px;border:1px solid rgba(2,6,23,.08);box-shadow:0 6px 20px rgba(2,6,23,.04);overflow-x:auto}
+.tab{flex:1;padding:10px 18px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;transition:all 180ms;white-space:nowrap;font-family:inherit}
+.tab:hover{background:rgba(2,6,23,.04);color:var(--ink)}
+.tab.active{background:linear-gradient(135deg,var(--brandA),var(--brandB));color:#fff;box-shadow:0 8px 20px rgba(14,165,233,.25)}
+.tab .badge{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.25);font-size:11px;font-weight:700}
+.tab.active .badge{background:rgba(255,255,255,.35)}
+.container{max-width:1200px;margin:0 auto}
+.section{display:none}
+.section.active{display:block;animation:fadeIn 300ms ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.user-card{background:#fff;border:1px solid rgba(2,6,23,.08);border-radius:var(--radius);padding:20px;box-shadow:0 8px 24px rgba(2,6,23,.06);transition:all 220ms cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.user-card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--brandA),var(--brandB));opacity:0;transition:opacity 220ms}
+.user-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(2,6,23,.12)}
+.user-card:hover::before{opacity:1}
+.user-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.user-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--brandA),var(--brandB));display:grid;place-items:center;color:#fff;font-size:20px;font-weight:700;flex-shrink:0;box-shadow:0 8px 20px rgba(14,165,233,.25)}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.user-meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.user-meta svg{width:14px;height:14px;opacity:.7}
+.user-actions{display:flex;gap:8px;margin-top:14px}
+.user-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:600;font-size:13px;cursor:pointer;transition:all 180ms;font-family:inherit}
+.btn-connect{background:linear-gradient(135deg,var(--brandA),var(--brandB));color:#fff;box-shadow:0 6px 16px rgba(14,165,233,.25)}
+.btn-connect:hover{box-shadow:0 10px 24px rgba(14,165,233,.35);transform:translateY(-2px)}
+.btn-accept{background:linear-gradient(135deg,var(--success),#059669);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.25)}
+.btn-accept:hover{box-shadow:0 10px 24px rgba(16,185,129,.35);transform:translateY(-2px)}
+.btn-reject,.btn-remove{background:#fff;color:var(--error);border:1px solid rgba(239,68,68,.25)}
+.btn-reject:hover,.btn-remove:hover{background:rgba(239,68,68,.08);border-color:var(--error)}
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.status-pending{background:rgba(245,158,11,.12);color:var(--warning)}
+.status-accepted{background:rgba(16,185,129,.12);color:var(--success)}
+.status-matched{background:rgba(14,165,233,.12);color:var(--brandA)}
+.empty{text-align:center;padding:60px 24px;color:var(--muted)}
+.empty svg{width:64px;height:64px;margin-bottom:16px;opacity:.3}
+.empty h3{font-size:18px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.empty p{font-size:14px}
+footer{background:#fff;border-top:1px solid rgba(2,6,23,.08);padding:32px 24px;margin-top:60px;position:relative;z-index:1}
+.footer-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+.footer-brand{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink)}
+.footer-brand svg{width:28px;height:28px}
+.footer-links{display:flex;gap:20px;font-size:14px}
+.footer-links a{color:var(--muted);text-decoration:none;transition:color 150ms}
+.footer-links a:hover{color:var(--brandA)}
+@media(max-width:768px){.hero h1{font-size:32px}.grid{grid-template-columns:1fr}.tabs{flex-wrap:nowrap}.footer-inner{flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+<nav><div class="nav-inner"><a href="notes.html" class="nav-brand"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs><rect x="18" y="10" width="28" height="8" rx="3" fill="url(#g)" opacity=".9"/><path d="M20 18h24v26a12 12 0 01-12 12h0a12 12 0 01-12-12z" fill="#fff" opacity=".08"/><path d="M20 18h24v26a12 12 0 01-12 12h0a12 12 0 01-12-12z" fill="none" stroke="url(#g)" stroke-width="2"/></svg><span>Jar of Notes</span></a><div class="nav-links"><a href="notes.html">Journal</a><a href="setup.html">Setup</a><button onclick="signOut()" style="color:var(--error)">Sign Out</button></div></div></nav>
+<div class="app"><div class="hero"><h1>Connect & Share</h1><p>Find friends, send connection requests, and share your journal entries with people you trust.</p></div>
+<div class="tabs"><button class="tab active" data-tab="matches" onclick="switchTab(this,'matches')"><svg style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:4px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>My Connections<span class="badge" id="matchCount">0</span></button><button class="tab" data-tab="requests" onclick="switchTab(this,'requests')"><svg style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:4px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>Requests<span class="badge" id="requestCount">0</span></button><button class="tab" data-tab="discover" onclick="switchTab(this,'discover')"><svg style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:4px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Discover People</button><button class="tab" data-tab="sent" onclick="switchTab(this,'sent')"><svg style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:4px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>Sent Requests</button></div>
+<div class="container"><div class="section active" id="matchesSection"><div id="matchList" class="grid"></div></div><div class="section" id="requestsSection"><div id="requestList" class="grid"></div></div><div class="section" id="discoverSection"><div id="userList" class="grid"></div></div><div class="section" id="sentSection"><div id="sentList" class="grid"></div></div></div></div>
+<footer><div class="footer-inner"><div class="footer-brand"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs><rect x="18" y="10" width="28" height="8" rx="3" fill="url(#gf)" opacity=".9"/><path d="M20 18h24v26a12 12 0 01-12 12h0a12 12 0 01-12-12z" fill="none" stroke="url(#gf)" stroke-width="2"/></svg><span>Jar of Notes</span></div><div class="footer-links"><a href="notes.html">Journal</a><a href="setup.html">Setup</a><a href="matches.html">Connect</a></div><div style="font-size:13px;color:var(--muted)"> 2025 Jar of Notes</div></div></footer>
+<script>
+const API_BASE=window.location.origin;const AUTH_KEY='jarOfMoods.auth.v1';function getCurrentUser(){const a=localStorage.getItem(AUTH_KEY);if(a){try{return JSON.parse(a).username}catch(e){console.error(e)}}window.location.href='login.html'}const currentUser=getCurrentUser();function signOut(){localStorage.removeItem(AUTH_KEY);localStorage.removeItem('jarOfMoods.currentUser');window.location.href='index.html'}function switchTab(btn,tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById(tab+'Section').classList.add('active')}async function loadAll(){await Promise.all([loadMatches(),loadRequests(),loadUsers(),loadSentRequests()])}function getInitials(u){return u.substring(0,2).toUpperCase()}async function loadMatches(){try{const res=await fetch(`${API_BASE}/api/matches?action=get_matches&username=${currentUser}`);const{matches}=await res.json();document.getElementById('matchCount').textContent=matches.length;const list=document.getElementById('matchList');if(matches.length===0){list.innerHTML='<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg><h3>No connections yet</h3><p>Start by discovering people and sending connection requests.</p></div>';return}list.innerHTML=matches.map(p=>`<div class="user-card"><div class="user-header"><div class="user-avatar">${getInitials(p)}</div><div class="user-info"><div class="user-name">${p}</div><div class="user-meta"><span class="status-badge status-matched">Connected</span></div></div></div><div class="user-actions"><button class="btn-remove" onclick="removeMatch('${p}')">Remove Connection</button></div></div>`).join('')}catch(err){console.error(err)}}async function loadRequests(){try{const res=await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);const{received}=await res.json();const pending=received.filter(r=>r.status==='pending');document.getElementById('requestCount').textContent=pending.length;const list=document.getElementById('requestList');if(pending.length===0){list.innerHTML='<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><h3>No pending requests</h3><p>You\'ll see connection requests from other users here.</p></div>';return}list.innerHTML=pending.map(r=>`<div class="user-card"><div class="user-header"><div class="user-avatar">${getInitials(r.sender_username)}</div><div class="user-info"><div class="user-name">${r.sender_username}</div><div class="user-meta"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${new Date(r.created_at).toLocaleDateString()}</div></div></div><div class="user-actions"><button class="btn-accept" onclick="respondRequest('${r.id}','accepted')">Accept</button><button class="btn-reject" onclick="respondRequest('${r.id}','rejected')">Decline</button></div></div>`).join('')}catch(err){console.error(err)}}async function loadSentRequests(){try{const res=await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);const{sent}=await res.json();const list=document.getElementById('sentList');if(sent.length===0){list.innerHTML='<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg><h3>No sent requests</h3><p>Requests you send will appear here.</p></div>';return}list.innerHTML=sent.map(r=>`<div class="user-card"><div class="user-header"><div class="user-avatar">${getInitials(r.receiver_username)}</div><div class="user-info"><div class="user-name">${r.receiver_username}</div><div class="user-meta"><span class="status-badge status-${r.status}">${r.status}</span></div></div></div></div>`).join('')}catch(err){console.error(err)}}async function loadUsers(){try{const res=await fetch(`${API_BASE}/api/matches?action=list_users`);const{users}=await res.json();const matchRes=await fetch(`${API_BASE}/api/matches?action=get_matches&username=${currentUser}`);const{matches}=await matchRes.json();const reqRes=await fetch(`${API_BASE}/api/matches?action=get_requests&username=${currentUser}`);const{sent}=await reqRes.json();const sentUsernames=sent.map(r=>r.receiver_username);const list=document.getElementById('userList');const others=users.filter(u=>u.username!==currentUser&&!matches.includes(u.username)&&!sentUsernames.includes(u.username));if(others.length===0){list.innerHTML='<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><h3>No users to discover</h3><p>You\'re already connected to everyone!</p></div>';return}list.innerHTML=others.map(u=>`<div class="user-card"><div class="user-header"><div class="user-avatar">${getInitials(u.username)}</div><div class="user-info"><div class="user-name">${u.username}</div><div class="user-meta"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Joined ${new Date(u.created_at).toLocaleDateString()}</div></div></div><div class="user-actions"><button class="btn-connect" onclick="sendRequest('${u.username}')">Send Request</button></div></div>`).join('')}catch(err){console.error(err)}}async function sendRequest(targetUsername){try{const res=await fetch(`${API_BASE}/api/matches`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'send_request',username:currentUser,targetUsername})});const data=await res.json();if(!res.ok){alert(data.error||'Failed to send request');return}alert('Connection request sent!');loadAll()}catch(err){console.error(err);alert('Failed to send request')}}async function respondRequest(requestId,status){try{const res=await fetch(`${API_BASE}/api/matches`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'respond_request',requestId,username:currentUser,status})});const data=await res.json();if(!res.ok){alert(data.error||'Failed to respond');return}alert(status==='accepted'?'Connection accepted!':'Request declined');loadAll()}catch(err){console.error(err);alert('Failed to respond')}}async function removeMatch(targetUsername){if(!confirm(`Remove connection with ${targetUsername}? They will no longer see your journal entries.`))return;try{const res=await fetch(`${API_BASE}/api/matches?action=remove_match&username=${currentUser}&targetUsername=${targetUsername}`,{method:'DELETE'});const data=await res.json();if(!res.ok){alert(data.error||'Failed to remove connection');return}alert('Connection removed');loadAll()}catch(err){console.error(err);alert('Failed to remove connection')}}loadAll()
+</script>
+</body>
 </html>

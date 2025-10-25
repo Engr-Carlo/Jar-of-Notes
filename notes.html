@@ -308,7 +308,7 @@ let currentUser = getCurrentUser(); // Use the function
 let entries = {}; // date_key → { mood, title, note, weather, user_id, ... }
 let dates = []; // sorted array of date strings
 
-// Load all entries for the user + matched partners
+// Load entries ONLY from matched partners (NOT your own)
 async function loadEntries() {
   try {
     const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}&includeMatches=true`);
@@ -316,15 +316,18 @@ async function loadEntries() {
     const { entries: data } = await res.json();
     
     entries = {};
+    // Filter out current user's entries - only show matched partners
     data.forEach(e => {
-      entries[e.date_key] = {
-        mood: e.mood || 'neutral',
-        title: e.title || '',
-        note: e.note || '',
-        weather: e.weather || null,
-        updatedAt: e.updated_at,
-        userId: e.user_id // Track who owns this entry
-      };
+      if (e.user_id !== currentUser) {
+        entries[e.date_key] = {
+          mood: e.mood || 'neutral',
+          title: e.title || '',
+          note: e.note || '',
+          weather: e.weather || null,
+          updatedAt: e.updated_at,
+          userId: e.user_id // Track who owns this entry
+        };
+      }
     });
     
     buildDateList();
@@ -372,10 +375,8 @@ function renderCards() {
     card.dataset.date = dateKey;
     card.style.setProperty('--note-bg', `var(--${entry.mood}-note)`);
     
-    // Show whose entry this is (if not current user)
-    const ownerLabel = entry.userId && entry.userId !== currentUser 
-      ? `<div class="owner-badge">${entry.userId}</div>` 
-      : '';
+    // Always show owner since all entries are from partners
+    const ownerLabel = entry.userId ? `<div class="owner-badge">${entry.userId}</div>` : '';
     
     card.innerHTML = `
       ${ownerLabel}
