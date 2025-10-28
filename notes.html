@@ -188,6 +188,16 @@
       /* Details overlay */
   .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(2,6,23,0.65); z-index: 50; backdrop-filter: blur(8px); padding: 16px; opacity: 0; transition: opacity 300ms ease-out; }
       .overlay.show { display: grid; animation: fadeIn 300ms ease-out forwards; opacity: 1; }
+      
+    /* Toast notifications */
+    .toast-container { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 10px; z-index: 60; pointer-events: none; }
+    .toast { pointer-events: auto; background: rgba(2,6,23,0.92); color: #e2e8f0; border: 1px solid rgba(148,163,184,0.25); border-radius: 10px; padding: 12px 14px; min-width: 260px; max-width: 340px; box-shadow: 0 16px 48px rgba(2,6,23,0.45), 0 6px 18px rgba(2,6,23,0.3); display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start; animation: slideUp 260ms cubic-bezier(.22,.61,.36,1); }
+    .toast .icon { font-size: 18px; line-height: 1; }
+    .toast .content { font-size: 13px; color: #cbd5e1; }
+    .toast .content .title { font-weight: 600; color: #e5e7eb; margin-bottom: 2px; }
+    .toast .actions button { background: transparent; border: none; color: #93c5fd; cursor: pointer; font-size: 12px; padding: 6px 8px; border-radius: 6px; }
+    .toast .actions button:hover { background: rgba(59,130,246,0.15); color: #bfdbfe; }
+    @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
 
       .detail-card {
@@ -290,6 +300,10 @@
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
               Connections
             </a>
+            <button id="enablePushBtn" class="btn-signout" title="Enable notifications">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              Enable
+            </button>
             <button id="signOutBtn" class="btn-signout">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
               Sign Out
@@ -338,11 +352,92 @@
       </div>
     </div>
 
+    <!-- Toasts -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
 
 
     <script>
       const API_BASE = window.location.origin;
 const USER_KEY = 'jarOfMoods.currentUser';
+// --- Web Push: Service worker + subscription ---
+let VAPID_PUBLIC_KEY = (window.__VAPID_PUBLIC_KEY__) || 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY_BASE64URL';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    return reg;
+  } catch (e) {
+    console.error('SW register failed', e);
+    return null;
+  }
+}
+
+async function getVapidPublicKey(){
+  try{
+    if(VAPID_PUBLIC_KEY && !VAPID_PUBLIC_KEY.startsWith('REPLACE_')) return VAPID_PUBLIC_KEY;
+    const r = await fetch(`${API_BASE}/api/push/public-key`);
+    if(!r.ok) return VAPID_PUBLIC_KEY;
+    const j = await r.json();
+    if(j && j.publicKey) VAPID_PUBLIC_KEY = j.publicKey;
+    return VAPID_PUBLIC_KEY;
+  }catch{ return VAPID_PUBLIC_KEY; }
+}
+
+async function subscribePush(reg) {
+  if (!reg || !('pushManager' in reg)) return null;
+  try {
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) return existing;
+    const pub = await getVapidPublicKey();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(pub)
+    });
+    return sub;
+  } catch (e) {
+    console.error('Push subscribe failed', e);
+    return null;
+  }
+}
+
+async function sendSubscriptionToServer(sub) {
+  try {
+    await fetch(`${API_BASE}/api/push/subscribe`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser, subscription: sub })
+    });
+  } catch (e) { console.error('Send sub failed', e); }
+}
+
+async function enablePushFlow() {
+  try {
+    if (!('Notification' in window)) { alert('Notifications not supported on this browser.'); return; }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { alert('Please allow notifications to enable push.'); return; }
+    const reg = await registerServiceWorker();
+    if (!reg) { alert('Service worker failed to register.'); return; }
+    const sub = await subscribePush(reg);
+    if (!sub) { alert('Failed to subscribe for push.'); return; }
+    await sendSubscriptionToServer(sub);
+    showToast({ title: 'Notifications enabled', message: 'You will get alerts when your partner posts.' });
+  } catch (e) {
+    console.error(e);
+    alert('Failed to enable notifications. See console.');
+  }
+}
 
 // Get the actual logged-in user from auth
 function getCurrentUser() {
@@ -362,6 +457,86 @@ let currentUser = getCurrentUser(); // Use the function
 
 let entries = {}; // date_key → { mood, title, note, weather, user_id, ... }
 let dates = []; // sorted array of date strings
+let pollingStarted = false;
+let pollHandle = null;
+
+const LAST_SEEN_KEY_BASE = 'jarOfMoods.lastSeen.v1:';
+function getLastSeenKey(){ return `${LAST_SEEN_KEY_BASE}${currentUser}`; }
+function readLastSeen(){ try{ return localStorage.getItem(getLastSeenKey()) || ''; }catch{ return ''; } }
+function writeLastSeen(iso){ try{ localStorage.setItem(getLastSeenKey(), iso); }catch{} }
+
+function isoMax(a,b){ if(!a) return b||''; if(!b) return a||''; return (new Date(a) > new Date(b)) ? a : b; }
+function computeMaxUpdatedAt(list){
+  let m = '';
+  for(const e of list){ if(e.updated_at){ m = isoMax(m, e.updated_at); } }
+  return m;
+}
+
+function showToast({title, message}){
+  const container = document.getElementById('toastContainer');
+  if(!container) return;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `
+    <div class="icon">🔔</div>
+    <div class="content">
+      <div class="title">${title}</div>
+      <div class="msg">${message}</div>
+    </div>
+    <div class="actions"><button type="button" class="toast-close">Dismiss</button></div>
+  `;
+  container.appendChild(el);
+  const close = ()=>{ el.style.opacity='0'; el.style.transform='translateY(4px)'; setTimeout(()=> el.remove(), 220); };
+  el.querySelector('.toast-close')?.addEventListener('click', close);
+  setTimeout(close, 6000);
+}
+
+async function maybeSystemNotify({title, message}){
+  try{
+    if(!('Notification' in window)) return;
+    if(Notification.permission === 'granted'){
+      new Notification(title, { body: message, icon: undefined });
+    } else if(Notification.permission === 'default'){
+      const res = await Notification.requestPermission();
+      if(res === 'granted') new Notification(title, { body: message });
+    }
+  }catch{}
+}
+
+async function checkForNewEntries(){
+  try{
+    const res = await fetch(`${API_BASE}/api/entries?userId=${currentUser}&includeMatches=true`);
+    if(!res.ok) throw new Error(`API error: ${res.status}`);
+    const { entries: data } = await res.json();
+    // Filter to partner entries only
+    const partner = data.filter(e => e.user_id !== currentUser);
+    const maxSeen = readLastSeen();
+    const newer = partner.filter(e => e.updated_at && (!maxSeen || new Date(e.updated_at) > new Date(maxSeen)));
+    if(newer.length > 0){
+      // Show one concise toast; if multiple, summarize
+      const latest = newer.sort((a,b)=> new Date(b.updated_at)-new Date(a.updated_at))[0];
+      const title = `${latest.user_id} posted a journal`;
+      const body = latest.title ? latest.title : (latest.mood ? `Mood: ${latest.mood}` : 'Open to read');
+      showToast({ title, message: body });
+      maybeSystemNotify({ title: 'New partner journal', message: `${latest.user_id}: ${body}` });
+      // Advance last seen to the overall max, not just latest new
+      const maxNow = computeMaxUpdatedAt(partner);
+      if(maxNow) writeLastSeen(maxNow);
+    }
+  }catch(err){ /* silent */ }
+}
+
+function startNotificationsPolling(initialMax){
+  // Initialize last seen if not set
+  const existing = readLastSeen();
+  if(!existing && initialMax){ writeLastSeen(initialMax); }
+  if(pollingStarted) return;
+  pollingStarted = true;
+  // Poll every 30s
+  pollHandle = setInterval(checkForNewEntries, 30000);
+  // Also run once after a short delay to avoid immediate spam on first load
+  setTimeout(checkForNewEntries, 5000);
+}
 
 // Load entries ONLY from matched partners (NOT your own)
 async function loadEntries() {
@@ -387,6 +562,9 @@ async function loadEntries() {
     
     // Rebuild carousel with freshly loaded entries
     initTrack();
+    // Start notifications polling once, using the current max updated_at among partner entries
+    const maxNow = computeMaxUpdatedAt(data.filter(e => e.user_id !== currentUser));
+    startNotificationsPolling(maxNow);
   } catch (err) {
     console.error('Load failed:', err);
     alert('Failed to load entries. Check console.');
@@ -766,6 +944,8 @@ function centerToday() {
         try{ localStorage.removeItem('jarOfMoods.auth.v1'); }catch{}
         window.location.href = 'index.html';
       });
+      const enablePushBtn = document.getElementById('enablePushBtn');
+      if (enablePushBtn) enablePushBtn.addEventListener('click', enablePushFlow);
       
 
       window.addEventListener('keydown', (e)=>{

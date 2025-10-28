@@ -2,8 +2,10 @@
   "name": "jar-of-notes",
   "private": true,
   "version": "1.0.0",
+  "description": "Jar of Notes app with push notifications",
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.4",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": "20.x"
